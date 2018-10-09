@@ -1,4 +1,4 @@
-package goutils
+package utils
 
 /*
  sign utils

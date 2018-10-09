@@ -1,8 +1,9 @@
-package goutils
+package utils
 
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"github.com/ggoop/goutils/glog"
 	"io"
 )
 
@@ -19,7 +20,7 @@ import (
 func GUID() string {
 	b := make([]byte, 48)
 	_, err := io.ReadFull(rand.Reader, b)
-	CheckAndPrintError("Guid generate io rand reader failed", err)
+	glog.CheckAndPrintError("Guid generate io rand reader failed", err)
 	guid := Md5Signer(base64.URLEncoding.EncodeToString(b))
 	return guid
 }

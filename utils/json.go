@@ -1,4 +1,4 @@
-package goutils
+package utils
 
 /*
  json utils
@@ -9,6 +9,7 @@ package goutils
 
 import (
 	"encoding/json"
+	"github.com/ggoop/goutils/glog"
 )
 
 /**
@@ -28,7 +29,7 @@ import (
 */
 func StructToJson(object interface{}) string {
 	data, err := json.Marshal(object)
-	CheckAndPrintError("Struct convert json string failed", err)
+	glog.CheckAndPrintError("Struct convert json string failed", err)
 	return string(data)
 }
 
@@ -44,5 +45,5 @@ func StructToJson(object interface{}) string {
 */
 func JsonToStruct(jsonString string, object interface{}) {
 	err := json.Unmarshal([]byte(jsonString), object)
-	CheckAndPrintError("Json string convert struct failed", err)
+	glog.CheckAndPrintError("Json string convert struct failed", err)
 }

@@ -1,4 +1,4 @@
-package goutils
+package utils
 
 import (
 	"strconv"
@@ -27,6 +27,16 @@ func NewString(s string) *String {
 	var str String
 	str.value = s
 	return &str
+}
+func NewStringBype(c []byte) *String {
+	n := -1
+	for i, b := range c {
+			if b == 0 {
+					break
+			}
+			n = i
+	}
+	return NewString(string(c[:n+1]))
 }
 
 func NewStringInt(i int) *String {
