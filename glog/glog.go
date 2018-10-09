@@ -2,54 +2,57 @@ package glog
 
 import (
 	"os"
-	"time"
 	"sync"
+	"time"
+
 	"github.com/kataras/golog"
 )
+
 type Logger struct {
 	*golog.Logger
- }
+}
 
-var mapValues map[string]*Logger=make(map[string]*Logger)
-var mapKeys map[string]bool=make(map[string]bool)
+var mapValues map[string]*Logger = make(map[string]*Logger)
+var mapKeys map[string]bool = make(map[string]bool)
 var mu sync.Mutex
-func getInstance(key string)*Logger{
-	if !mapKeys[key]{
-			mu.Lock()
-			defer mu.Unlock()
-			if !mapKeys[key]{
-				mapKeys[key]=true
-				mapValues[key]=&Logger{golog.New()}
-				mapValues[key].SetLogFile(key)
-			}
+
+func getInstance(key string) *Logger {
+	if !mapKeys[key] {
+		mu.Lock()
+		defer mu.Unlock()
+		if !mapKeys[key] {
+			mapKeys[key] = true
+			mapValues[key] = &Logger{golog.New()}
+			mapValues[key].SetLogFile(key)
+		}
 	}
 	return mapValues[key]
 }
-func createPath(path string)error  {
+func createPath(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {
-			return nil
+		return nil
 	}
 	if os.IsNotExist(err) {
-		if err := os.MkdirAll(path, os.ModePerm);err != nil {
-			return  err
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
+			return err
 		}
 		return nil
 	}
 	return err
 }
-func (l *Logger)SetLogFile(key string) {
-	if err:=createPath("./storage/logs");err!=nil{
+func (l *Logger) SetLogFile(key string) {
+	if err := createPath("./storage/logs"); err != nil {
 		panic(err)
 	}
-	filename := "./storage/logs/"+key+time.Now().Format("2006-01-02")+".log"
+	filename := "./storage/logs/" + key + time.Now().Format("2006-01-02") + ".log"
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
 	}
 	l.AddOutput(f)
 }
-func GetLogger(key string) *Logger{
+func GetLogger(key string) *Logger {
 	return getInstance(key)
 }
 func SetLevel(levelName string) {
@@ -59,15 +62,18 @@ func SetTimeFormat(s string) {
 	getInstance("").SetTimeFormat(s)
 }
 func NewLine(newLine bool) {
-	getInstance("").NewLine=newLine
+	getInstance("").NewLine = newLine
 }
 func CheckAndPrintError(flag string, err error) {
 	if err != nil {
-		getInstance("").Println(flag,"\n", err)
+		getInstance("").Println(flag, "\n", err)
 	}
 }
 func Print(v ...interface{}) {
 	getInstance("").Print(v...)
+}
+func Printf(format string, args ...interface{}) {
+	getInstance("").Printf(format, args...)
 }
 
 // Println prints a log message without levels and colors.
