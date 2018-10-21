@@ -2,6 +2,7 @@ package glog
 
 import (
 	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ type Logger struct {
 var mapValues map[string]*Logger = make(map[string]*Logger)
 var mapKeys map[string]bool = make(map[string]bool)
 var mu sync.Mutex
+var logDir string = "storage/logs"
 
 func getInstance(key string) *Logger {
 	if !mapKeys[key] {
@@ -42,15 +44,18 @@ func createPath(path string) error {
 	return err
 }
 func (l *Logger) SetLogFile(key string) {
-	if err := createPath("./storage/logs"); err != nil {
+	if err := createPath(logDir); err != nil {
 		panic(err)
 	}
-	filename := "./storage/logs/" + key + time.Now().Format("2006-01-02") + ".log"
+	filename := path.Join(logDir, key+time.Now().Format("2006-01-02")+".log")
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
 	}
 	l.AddOutput(f)
+}
+func SetPath(path string) {
+	logDir = path
 }
 func GetLogger(key string) *Logger {
 	return getInstance(key)
