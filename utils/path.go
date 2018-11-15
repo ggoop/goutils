@@ -7,6 +7,7 @@ import (
 )
 
 func CreatePath(path string) error {
+	path = JoinCurrentPath(path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return nil
@@ -25,9 +26,16 @@ func GetCurrentPath() string {
 	return dir
 }
 func JoinCurrentPath(p string) string {
+	if filepath.IsAbs(p) {
+		return p
+	}
+	if path.IsAbs(p) {
+		return p
+	}
 	return path.Join(GetCurrentPath(), p)
 }
 func PathExists(path string) bool {
+	path = JoinCurrentPath(path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return true
