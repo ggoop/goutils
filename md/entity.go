@@ -9,8 +9,8 @@ type Entity struct {
 	Memo      string
 }
 
-func (s *Entity) GetMD() string {
-	return "6d28bb8009b711e78e9151efd7044098"
+func (s *Entity) MDID() string {
+	return "01e8f0b45e12835fe7fd8cec4b7174de"
 }
 
 type EntityField struct {
@@ -27,6 +27,6 @@ type EntityField struct {
 	Memo       string
 }
 
-func (s *EntityField) GetMD() string {
-	return "f532f4a009b611e78197f91f9f35de3a"
+func (s *EntityField) MDID() string {
+	return "01e8f0b45e1456e1fc4d8cec4b7174de"
 }

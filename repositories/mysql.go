@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/ggoop/goutils/configs"
-
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/md"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )
@@ -49,7 +49,12 @@ func initDb() {
 
 	defer db.Close()
 }
-
+func (s *MysqlRepo) MDMigrate(values ...interface{}) {
+	//先增加模型表
+	s.AutoMigrate(md.Entity{}, md.EntityField{})
+	//表迁移
+	s.AutoMigrate(values...)
+}
 func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	if len(objArr) == 0 {
 		return nil
