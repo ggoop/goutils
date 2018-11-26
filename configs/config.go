@@ -56,6 +56,9 @@ func (s *Config) SetValue(name, value string) *Config {
 
 var Default *Config
 
+func init() {
+	New()
+}
 func New() {
 	Default = &Config{}
 	viper.SetConfigType("yaml")

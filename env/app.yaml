@@ -1,0 +1,17 @@
+app:
+    key: 01e8b4a088391070beb7a30051fb196f
+    code: appcode
+    name: 应用名称
+    locale: zh-cn
+    port: 3003    
+    debug: true
+db:
+    driver: mysql
+    host: localhost
+    port: 3306
+    database: goutils
+    username: root
+    password: root
+log: 
+  #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
+  level: info

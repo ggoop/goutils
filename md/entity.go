@@ -7,6 +7,8 @@ type Entity struct {
 	Name      string
 	TableName string
 	Memo      string
+
+	Fields []EntityField
 }
 
 func (s *Entity) MDID() string {
@@ -15,16 +17,19 @@ func (s *Entity) MDID() string {
 
 type EntityField struct {
 	ModelUnscoped
-	EntityID   string
-	Entity     *Entity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
-	Code       string
-	Name       string
-	FieldName  string
-	ForeignKey string
-	LocalKey   string
-	TypeID     string
-	Type       *Entity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
-	Memo       string
+	EntityID       string
+	Entity         *Entity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
+	Code           string
+	Name           string
+	DBName         string
+	IsNormal       bool
+	IsPrimaryKey   bool
+	ForeignKey     string //外键
+	AssociationKey string //Association ForeignKey
+	Kind           string
+	TypeID         string
+	Type           *Entity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
+	Memo           string
 }
 
 func (s *EntityField) MDID() string {
