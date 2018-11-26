@@ -24,8 +24,7 @@ import (
 func GUID() string {
 	s := newRFC4122Generator()
 	u, _ := s.NewV1()
-	buf := make([]byte, 36)
-
+	buf := make([]byte, 32)
 	hex.Encode(buf[0:4], u[6:8])
 	hex.Encode(buf[4:8], u[4:6])
 	hex.Encode(buf[8:16], u[0:4])
