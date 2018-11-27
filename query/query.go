@@ -13,8 +13,8 @@ type Query struct {
 	Fields []QueryField `gorm:"name:字段集合"`
 }
 
-func (s *Query) MDID() string {
-	return "01e8f0b45e12835fe7fd8cec4b7174de"
+func (s *Query) MD() *md.Mder {
+	return &md.Mder{ID: "01e8f0b45e12835fe7fd8cec4b7174de", Name: "查询"}
 }
 
 type QueryField struct {
@@ -26,6 +26,6 @@ type QueryField struct {
 	QueryID string `gorm:"name:查询ID"`
 }
 
-func (s *QueryField) MDID() string {
-	return "b6977390f18011e89e07b96946e7d763"
+func (s *QueryField) MD() *md.Mder {
+	return &md.Mder{ID: "b6977390f18011e89e07b96946e7d763", Name: "查询字段"}
 }

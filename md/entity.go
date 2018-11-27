@@ -9,10 +9,26 @@ type Entity struct {
 	Memo      string
 
 	Fields []EntityField
+
+	cache map[string]EntityField
 }
 
-func (s *Entity) MDID() string {
-	return "01e8f0b45e12835fe7fd8cec4b7174de"
+func (s *Entity) MD() *Mder {
+	return &Mder{ID: "01e8f0b45e12835fe7fd8cec4b7174de", Name: "实体"}
+}
+func (s *Entity) GetField(name string) *EntityField {
+	if s.cache == nil {
+		s.cache = make(map[string]EntityField)
+	}
+	if s.Fields != nil && len(s.Fields) > 0 && len(s.cache) == 0 {
+		for _, v := range s.Fields {
+			s.cache[v.Name] = v
+		}
+	}
+	if v, ok := s.cache[name]; ok {
+		return &v
+	}
+	return nil
 }
 
 type EntityField struct {
@@ -32,6 +48,6 @@ type EntityField struct {
 	Memo           string
 }
 
-func (s *EntityField) MDID() string {
-	return "01e8f0b45e1456e1fc4d8cec4b7174de"
+func (s *EntityField) MD() *Mder {
+	return &Mder{ID: "01e8f0b45e1456e1fc4d8cec4b7174de", Name: "属性"}
 }
