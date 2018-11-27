@@ -10,7 +10,7 @@ import (
 )
 
 type AppConfig struct {
-	Key    string `mapstructure:"key"`
+	Token    string `mapstructure:"token"`
 	Code   string `mapstructure:"code"`
 	Name   string `mapstructure:"name"`
 	Port   string `mapstructure:"port"`

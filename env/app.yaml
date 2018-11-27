@@ -1,5 +1,5 @@
 app:
-    key: 01e8b4a088391070beb7a30051fb196f
+    token: 01e8b4a088391070beb7a30051fb196f
     code: appcode
     name: 应用名称
     locale: zh-cn
