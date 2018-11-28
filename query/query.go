@@ -14,7 +14,7 @@ type Query struct {
 }
 
 func (s *Query) MD() *md.Mder {
-	return &md.Mder{ID: "01e8f0b45e12835fe7fd8cec4b7174de", Name: "查询"}
+	return &md.Mder{ID: "01e8f3067a691a50b46b697fa9f73d01", Name: "查询"}
 }
 
 type QueryField struct {
@@ -27,5 +27,5 @@ type QueryField struct {
 }
 
 func (s *QueryField) MD() *md.Mder {
-	return &md.Mder{ID: "b6977390f18011e89e07b96946e7d763", Name: "查询字段"}
+	return &md.Mder{ID: "01e8f30683641760aa9261a2b248c5f0", Name: "查询字段"}
 }

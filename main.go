@@ -8,5 +8,6 @@ import (
 
 func main() {
 	mysql := repositories.NewMysqlRepo()
-	md.Migrate(mysql, &query.Query{}, &query.QueryField{})
+	md.Migrate(mysql, &query.Query{})
+	md.Migrate(mysql, &query.QueryField{})
 }
