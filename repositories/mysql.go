@@ -21,7 +21,13 @@ func NewMysqlRepo() *MysqlRepo {
 	initDb()
 
 	// 创建连接
-	config := mysql.Config{User: configs.Default.Db.Username, Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host, DBName: configs.Default.Db.Database, AllowNativePasswords: true, ParseTime: true}
+	config := mysql.Config{
+		User:   configs.Default.Db.Username,
+		Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host,
+		DBName: configs.Default.Db.Database, AllowNativePasswords: true,
+		ParseTime: true,
+		Loc:       time.Local,
+	}
 	if configs.Default.Db.Port != "" {
 		config.Addr = fmt.Sprintf("%s:%s", configs.Default.Db.Host, configs.Default.Db.Port)
 	}
