@@ -103,14 +103,16 @@ func (s *Context) Clean() {
 func (s *Context) GetValue(name string) string {
 	if s.data == nil {
 		s.data = make(map[string]string)
+		return ""
 	}
 	return s.data[strings.ToLower(name)]
 }
 func (s *Context) GetIntValue(name string) int {
-	if s.data == nil {
-		s.data = make(map[string]string)
-	}
-	v, _ := strconv.Atoi(s.data[strings.ToLower(name)])
+	v, _ := strconv.Atoi(s.GetValue(name))
+	return v
+}
+func (s *Context) GetInt64Value(name string) int64 {
+	v, _ := strconv.ParseInt(s.GetValue(name), 10, 64)
 	return v
 }
 func (s *Context) SetValue(name, value string) *Context {
