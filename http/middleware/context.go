@@ -58,7 +58,13 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 		}
 	}
 	ctx.Values().Set(context.DefaultContextKey, uc)
+	if ctx.IsAjax() {
+		ctx.Header("Access-Control-Allow-Origin", "*")
+		ctx.Header("Access-Control-Allow-Headers", "*")
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+	}
 	ctx.Next()
+
 }
 func (m *ContextHandle) CheckSession(ctx iris.Context) (*context.Context, error) {
 	var (
