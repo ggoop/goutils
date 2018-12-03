@@ -1,13 +1,18 @@
 package main
 
 import (
-	"github.com/ggoop/goutils/md"
-	"github.com/ggoop/goutils/query"
-	"github.com/ggoop/goutils/repositories"
+	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/utils"
 )
 
 func main() {
-	mysql := repositories.NewMysqlRepo()
-	md.Migrate(mysql, &query.Query{})
-	md.Migrate(mysql, &query.QueryField{})
+	str, err := utils.Encrypt("123", "aaa")
+	if err != nil {
+		glog.Errorf("sss ,%v %v", str, err)
+	}
+
+	str, err = utils.Decrypt(str, "aaa")
+	if err != nil {
+		glog.Errorf("sss ,%v %v", str, err)
+	}
 }
