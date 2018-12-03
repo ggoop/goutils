@@ -6,12 +6,12 @@ import (
 )
 
 func main() {
-	str, err := utils.Encrypt("123", "aaa")
+	str, err := utils.AesCFBEncrypt("1", "aaa")
 	if err != nil {
 		glog.Errorf("sss ,%v %v", str, err)
 	}
 
-	str, err = utils.Decrypt(str, "aaa")
+	str, err = utils.AesCFBDecrypt(str, "aaa2")
 	if err != nil {
 		glog.Errorf("sss ,%v %v", str, err)
 	}

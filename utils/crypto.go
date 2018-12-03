@@ -21,7 +21,7 @@ func getKey(key string) []byte {
 	ctx.Write([]byte(key))
 	return ([]byte(hex.EncodeToString(ctx.Sum(nil))))[:l]
 }
-func Encrypt(text, key string) (string, error) {
+func AesCFBEncrypt(text, key string) (string, error) {
 	skey := getKey(key)
 	var iv = skey[:aes.BlockSize]
 	encrypted := make([]byte, len(text))
@@ -33,7 +33,7 @@ func Encrypt(text, key string) (string, error) {
 	encrypter.XORKeyStream(encrypted, []byte(text))
 	return hex.EncodeToString(encrypted), nil
 }
-func Decrypt(encrypted, key string) (string, error) {
+func AesCFBDecrypt(encrypted, key string) (string, error) {
 	skey := getKey(key)
 	var err error
 	defer func() {
