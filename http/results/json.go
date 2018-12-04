@@ -32,6 +32,8 @@ func ToError(err interface{}, code ...int) Result {
 	obj := iris.Map{}
 	if ev, ok := err.(error); ok {
 		obj["msg"] = ev.Error()
+	} else {
+		obj["msg"] = err
 	}
 	if code != nil && len(code) > 0 {
 		if code[0] >= 100 && code[0] < 1000 {
