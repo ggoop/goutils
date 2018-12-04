@@ -4,7 +4,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
+	"fmt"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/ggoop/goutils/glog"
 )
 
 func getKey(key string) []byte {
@@ -55,4 +60,41 @@ func AesCFBDecrypt(encrypted, key string) (string, error) {
 	decrypter := cipher.NewCFBDecrypter(block, iv)
 	decrypter.XORKeyStream(decrypted, src)
 	return string(decrypted), nil
+}
+
+//获取签名算法为HS256的token
+func CreateJWTToken(dic map[string]interface{}, SIGNED_KEY string) string {
+	claims := jwt.MapClaims{}
+	for k, v := range dic {
+		claims[k] = v
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	//加密算法是HS256时，这里的SignedString必须是[]byte（）类型
+	ss, err := token.SignedString([]byte(SIGNED_KEY))
+	if err != nil {
+		glog.Println("token生成签名错误,err=%v", err)
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString([]byte(ss))
+}
+
+//解析签名算法为HS256的token
+func ParseJWTToken(tokenString string, SIGNED_KEY string) (jwt.MapClaims, error) {
+	decodeBytes, err := base64.StdEncoding.DecodeString(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	tokenString = string(decodeBytes)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SIGNED_KEY), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("ParseHStoken:claims类型转换失败")
+	}
+	return claims, nil
 }
