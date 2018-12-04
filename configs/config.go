@@ -10,7 +10,7 @@ import (
 )
 
 type AppConfig struct {
-	Token    string `mapstructure:"token"`
+	Token  string `mapstructure:"token"`
 	Code   string `mapstructure:"code"`
 	Name   string `mapstructure:"name"`
 	Port   string `mapstructure:"port"`
@@ -73,6 +73,21 @@ func New() {
 	viper.Unmarshal(&Default)
 	if Default.App.Port == "" {
 		Default.App.Port = "8080"
+	}
+	if Default.App.Locale == "" {
+		Default.App.Locale = "zh-cn"
+	}
+	if Default.App.Token == "" {
+		Default.App.Token = "01e8f6a984101b20b24e4d172ec741be"
+	}
+	if Default.Db.Driver == "" {
+		Default.Db.Driver = "mysql"
+	}
+	if Default.Db.Host == "" {
+		Default.Db.Host = "localhost"
+	}
+	if Default.Db.Port == "" {
+		Default.Db.Port = "3306"
 	}
 	if Default.Db.Charset == "" {
 		Default.Db.Charset = "utf8mb4"
