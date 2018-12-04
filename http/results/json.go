@@ -28,30 +28,24 @@ func NotFound(params ...string) Result {
 	return ToError(fmt.Errorf("找不到 %s", strings.Join(params, " ")), iris.StatusNotFound)
 }
 func ToError(err interface{}, code ...int) Result {
-	if code != nil && len(code) > 0 {
-		if ev, ok := err.(error); ok {
-			return mvc.Response{
-				Code:   code[0],
-				Object: iris.Map{"msg": ev.Error()},
-			}
-		} else {
-			return mvc.Response{
-				Code:   code[0],
-				Object: iris.Map{"msg": err},
-			}
-		}
-
-	} else {
-		if ev, ok := err.(error); ok {
-			return mvc.Response{
-				Code:   iris.StatusBadRequest,
-				Object: iris.Map{"msg": ev.Error()},
-			}
-		} else {
-			return mvc.Response{
-				Code:   iris.StatusBadRequest,
-				Object: iris.Map{"msg": err},
-			}
-		}
+	res := mvc.Response{}
+	obj := iris.Map{}
+	if ev, ok := err.(error); ok {
+		obj["msg"] = ev.Error()
 	}
+	if code != nil && len(code) > 0 {
+		if code[0] >= 100 && code[0] < 1000 {
+			res.Code = code[0]
+		} else {
+			obj["code"] = code[0]
+			res.Code = iris.StatusBadRequest
+		}
+	} else {
+		res.Code = iris.StatusBadRequest
+	}
+	if code != nil && len(code) > 1 {
+		obj["code"] = code[1]
+	}
+	res.Object = obj
+	return res
 }
