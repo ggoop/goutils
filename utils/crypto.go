@@ -98,3 +98,22 @@ func ParseJWTToken(tokenString string, SIGNED_KEY string) (jwt.MapClaims, error)
 	}
 	return claims, nil
 }
+
+//解析签名算法为HS256的token
+func ParseJWTTokenNotValidation(tokenString string, SIGNED_KEY string) (jwt.MapClaims, error) {
+	decodeBytes, err := base64.StdEncoding.DecodeString(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	tokenString = string(decodeBytes)
+	parse := new(jwt.Parser)
+	parse.SkipClaimsValidation = true
+	token, _ := parse.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SIGNED_KEY), nil
+	})
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("ParseHStoken:claims类型转换失败")
+	}
+	return claims, nil
+}
