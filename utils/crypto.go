@@ -106,14 +106,13 @@ func ParseJWTTokenNotValidation(tokenString string, SIGNED_KEY string) (jwt.MapC
 		return nil, err
 	}
 	tokenString = string(decodeBytes)
+
+	claims := jwt.MapClaims{}
 	parse := new(jwt.Parser)
 	parse.SkipClaimsValidation = true
-	token, _ := parse.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SIGNED_KEY), nil
-	})
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, fmt.Errorf("ParseHStoken:claims类型转换失败")
+	_, _, err = parse.ParseUnverified(tokenString, claims)
+	if err != nil {
+		return nil, err
 	}
 	return claims, nil
 }
