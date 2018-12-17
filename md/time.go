@@ -17,6 +17,23 @@ const (
 	Layout_YYYYMMDDHHIISS = "2006-01-02 15:04:05"
 )
 
+func CreateTime(value interface{}) Time {
+	if v, ok := value.(time.Time); ok {
+		return Time{v}
+	}
+	if v, ok := value.(string); ok {
+		data := []rune(v)
+		if len(data) > len(Layout_YYYYMMDDHHIISS) {
+			data = data[:len(Layout_YYYYMMDDHHIISS)]
+		} else if len(data) > len(Layout_YYYMMDD) {
+			data = data[:len(Layout_YYYMMDD)]
+		}
+		now, _ := time.ParseInLocation("2006-01-02", string(data), time.Local)
+		return Time{now}
+	}
+	return Time{time.Now()}
+}
+
 // MarshalJSON on JSONTime format Time field with %Y-%m-%d %H:%M:%S
 func (t Time) MarshalJSON() ([]byte, error) {
 	formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
