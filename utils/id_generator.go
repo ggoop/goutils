@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	mrand "math/rand"
 	"net"
 	"sync"
 	"time"
@@ -47,6 +48,16 @@ func UUID() string {
 	buf[23] = '-'
 	hex.Encode(buf[24:], u[10:])
 	return string(buf)
+}
+func RandomString(l int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyz"
+	bytes := []byte(str)
+	result := []byte{}
+	r := mrand.New(mrand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < l; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
 }
 
 const Size = 16
