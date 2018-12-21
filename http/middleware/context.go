@@ -76,9 +76,13 @@ func (m *ContextHandle) CheckSession(ctx iris.Context) (*context.Context, error)
 	if m.Sessions != nil {
 		session := m.Sessions.Start(ctx)
 		if v := session.Get(context.AuthSessionKey); v != nil {
-			uc = v.(*context.Context)
-			find = true
+			if str, ok := v.(string); ok {
+				uc, err = (&context.Context{}).FromTokenString(str)
+			} else if obj, ok := v.(*context.Context); ok {
+				uc = obj
+			}
 		}
+		find = true
 	}
 	if !find {
 		if str := ctx.GetCookie(context.AuthSessionKey); str != "" {
