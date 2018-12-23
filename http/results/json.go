@@ -24,8 +24,16 @@ func Unauthenticated() Result {
 func ParamsRequired(params ...string) Result {
 	return ToError(fmt.Errorf("参数 %s 不能为空!", params), iris.StatusBadRequest)
 }
+func ParamsFailed(params ...string) Result {
+	return ToError(fmt.Errorf("参数 %s 不正确!", params), iris.StatusUnsupportedMediaType)
+}
 func NotFound(params ...string) Result {
 	return ToError(fmt.Errorf("找不到 %s", strings.Join(params, " ")), iris.StatusNotFound)
+}
+func ToSingle(data interface{}) Result {
+	return mvc.Response{
+		Object: iris.Map{"data": data},
+	}
 }
 func ToError(err interface{}, code ...int) Result {
 	res := mvc.Response{}
