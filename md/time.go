@@ -33,6 +33,10 @@ func CreateTime(value interface{}) Time {
 	}
 	return Time{time.Now()}
 }
+func CreateTimePtr(value interface{}) *Time {
+	t := CreateTime(value)
+	return &t
+}
 
 // MarshalJSON on JSONTime format Time field with %Y-%m-%d %H:%M:%S
 func (t Time) MarshalJSON() ([]byte, error) {
