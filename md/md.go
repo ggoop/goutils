@@ -9,6 +9,12 @@ import (
 	"github.com/ggoop/goutils/repositories"
 )
 
+const STATE_TEMP = "temp"
+const STATE_CREATED = "created"
+const STATE_UPDATED = "updated"
+const STATE_DELETED = "deleted"
+const STATE_NORMAL = "normal"
+
 type MD interface {
 	MD() *Mder
 }
