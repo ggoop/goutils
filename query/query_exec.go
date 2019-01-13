@@ -44,8 +44,7 @@ func (m *queryExec) FormatQueryEntity(entity *md.MDEntity) *execEntity {
 	return &e
 }
 func (m *queryExec) Run() (*gorm.DB, error) {
-	entryEntity := &md.MDEntity{}
-	m.repo.Where("code=?", m.query.Entry).Preload("Fields").Take(entryEntity)
+	entryEntity := md.GetEntity(m.query.Entry)
 	if entryEntity.ID == "" {
 		return nil, fmt.Errorf("找不到实体 %v", m.query.Entry)
 	}
@@ -58,13 +57,12 @@ func (m *queryExec) parseEntity(id, path string) *execEntity {
 	if v, ok := m.entities[path]; ok {
 		return v
 	}
-	entity := &md.MDEntity{}
-	m.repo.Where("id=?", id).Preload("Fields").Take(entity)
-	v := m.FormatQueryEntity(entity)
-	if entity.ID == "" {
+	entity := md.GetEntity(id)
+	if entity == nil {
 		glog.Errorf("找不到实体 %v", id)
 		return nil
 	}
+	v := m.FormatQueryEntity(entity)
 	v.Alia = fmt.Sprintf("a%v", len(m.entities)+1)
 	m.entities[path] = v
 	return v

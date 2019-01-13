@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ggoop/goutils/di"
+	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/utils"
 
 	"github.com/ggoop/goutils/repositories"
@@ -29,6 +31,29 @@ type md struct {
 }
 
 var initMD bool
+var mdCache map[string]*MDEntity
+
+func GetEntity(id string) *MDEntity {
+	if mdCache == nil {
+		mdCache = make(map[string]*MDEntity)
+	}
+	id = strings.ToLower(id)
+	if v, ok := mdCache[id]; ok {
+		return v
+	}
+	item := &MDEntity{}
+	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
+		db.Preload("Fields").Take(item, "id=? or code=?", id, id)
+	}); err != nil {
+		glog.Errorf("di Provide error:%s", err)
+	}
+	if item.ID != "" {
+		mdCache[strings.ToLower(item.ID)] = item
+		mdCache[strings.ToLower(item.Code)] = item
+		return item
+	}
+	return nil
+}
 
 func newMd(value interface{}, db *repositories.MysqlRepo) *md {
 	item := md{Value: value, db: db}
