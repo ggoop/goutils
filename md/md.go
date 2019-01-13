@@ -131,7 +131,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	if !initMD {
 		initMD = true
 		//先增加模型表
-		db.AutoMigrate(&MDEntity{}, &MDField{})
+		db.AutoMigrate(&MDEntity{}, &MDField{}, &MDEnumType{}, &MDEnum{})
 		m := newMd(&MDEntity{}, db)
 		m.Migrate()
 

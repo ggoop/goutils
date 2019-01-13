@@ -8,8 +8,7 @@ type MDEntity struct {
 	FullName  string
 	TableName string
 	Memo      string
-
-	Fields []MDField `gorm:"foreignkey:EntityID"`
+	Fields    []MDField `gorm:"foreignkey:EntityID"`
 
 	cache map[string]MDField
 }
