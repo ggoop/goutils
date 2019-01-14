@@ -17,6 +17,9 @@ const STATE_UPDATED = "updated"
 const STATE_DELETED = "deleted"
 const STATE_NORMAL = "normal"
 
+const TYPE_ENTITY = "entity"
+const TYPE_ENUM = "enum"
+
 type MD interface {
 	MD() *Mder
 }
@@ -128,7 +131,7 @@ func (m *md) Migrate() {
 			}
 		}
 		if newField.TypeID != "" {
-			newField.TypeType = "entity"
+			newField.TypeType = TYPE_ENTITY
 		} else {
 			newField.TypeType = reflectType.Name()
 		}

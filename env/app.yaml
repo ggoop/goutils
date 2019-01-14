@@ -8,8 +8,8 @@ app:
 db:
     driver: mysql
     host: localhost
-    port: 3306
-    database: goutils
+    port: 3303
+    database: suite_store
     username: root
     password: root
 log: 

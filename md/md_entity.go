@@ -1,5 +1,7 @@
 package md
 
+import "strings"
+
 type MDEntity struct {
 	ModelUnscoped
 	Type      string // enum,entity
@@ -20,9 +22,10 @@ func (s *MDEntity) GetField(code string) *MDField {
 	if s.cache == nil {
 		s.cache = make(map[string]MDField)
 	}
+	code = strings.ToLower(code)
 	if s.Fields != nil && len(s.Fields) > 0 && len(s.cache) == 0 {
 		for _, v := range s.Fields {
-			s.cache[v.Code] = v
+			s.cache[strings.ToLower(v.Code)] = v
 		}
 	}
 	if v, ok := s.cache[code]; ok {
