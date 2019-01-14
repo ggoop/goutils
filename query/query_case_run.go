@@ -11,12 +11,17 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func RunCase(repo *repositories.MysqlRepo, item QueryCase) (*gorm.DB, error) {
+type ICaseExector interface {
+	Run() (*gorm.DB, error)
+	Where(field string, args ...interface{}) ICaseExector
+}
+
+func GetCaseExector(repo *repositories.MysqlRepo, item QueryCase) ICaseExector {
 	if repo == nil || item.Query == nil {
-		return nil, fmt.Errorf("参数不正确")
+		return nil
 	}
 	exec := &caseExector{repo: repo, qcase: &item, entities: make(map[string]*execEntity), fields: make(map[string]*execField)}
-	return exec.Run()
+	return exec
 }
 
 type caseExector struct {
@@ -27,20 +32,9 @@ type caseExector struct {
 	mainEnity *execEntity
 }
 
-type execEntity struct {
-	Table    string
-	Alia     string
-	IsMain   bool
-	Entity   *md.MDEntity
-	Path     string
-	Sequence int
+func (m *caseExector) Where(field string, args ...interface{}) ICaseExector {
+	return m
 }
-type execField struct {
-	Entity *execEntity
-	Field  *md.MDField
-	Path   string
-}
-
 func (m *caseExector) FormatQueryEntity(entity *md.MDEntity) *execEntity {
 	e := execEntity{Table: entity.TableName, Entity: entity}
 	return &e
@@ -82,9 +76,6 @@ func (m *caseExector) Run() (*gorm.DB, error) {
 	queryDB = m.buildColumns(queryDB)
 	queryDB = m.buildJoins(queryDB)
 	queryDB = m.buildWheres(queryDB)
-
-	count := 0
-	queryDB.Count(&count)
 	return queryDB, nil
 }
 func (m *caseExector) buildColumns(queryDB *gorm.DB) *gorm.DB {
