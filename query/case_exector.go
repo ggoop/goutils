@@ -9,45 +9,54 @@ import (
 type IExector interface {
 	Run() (*gorm.DB, error)
 }
-type execEntity struct {
-	Table    string
+type oqlEntity struct {
 	Alia     string
 	IsMain   bool
 	Entity   *md.MDEntity
 	Path     string
 	Sequence int
 }
-type execField struct {
-	Entity *execEntity
+type oqlField struct {
+	Entity *oqlEntity
 	Field  *md.MDField
 	Path   string
 }
-type execOrder struct {
+type oqlOrder struct {
 	Field    string
 	IsDesc   bool
 	Sequence int
+	Expr     string
+	Args     []interface{}
 }
-type execColumn struct {
+type oqlGroup struct {
+	Field string
+	Expr  string
+	Args  []interface{}
+}
+type oqlColumn struct {
 	Field      string
 	ColumnName string
-	Title      string
+	Expr       string
+	Args       []interface{}
 }
-type execWhere struct {
+type oqlWhere struct {
 	Field    string
 	Operator string
 	Value    []interface{}
 	Sequence int
-	Children []execWhere
+	Children []oqlWhere
+	Expr     string
+	Args     []interface{}
 }
 
 type exector struct {
 	repo      *repositories.MysqlRepo
-	mainEnity *execEntity
-	entities  map[string]*execEntity
-	fields    map[string]*execField
-	orders    []execOrder
-	columns   []execColumn
-	wheres    []execWhere
+	mainEnity *oqlEntity
+	entities  map[string]*oqlEntity
+	fields    map[string]*oqlField
+	orders    []oqlOrder
+	columns   []oqlColumn
+	wheres    []oqlWhere
 }
 
 func NewExector(repo *repositories.MysqlRepo, md md.MDEntity) IExector {
