@@ -17,7 +17,7 @@ func main() {
 
 	if err := di.Global.Invoke(func(mysql *repositories.MysqlRepo) {
 		q := query.QueryCase{}
-		q.Query = &query.Query{Entry: "CboTeam", Code: "CboTeam"}
+		q.Query = &query.Query{Entry: "CboTeam as a", Code: "CboTeam"}
 		q.Columns = []query.QueryColumn{
 			query.QueryColumn{Field: "Code"},
 			query.QueryColumn{Field: "Dept.Org.Name"},
@@ -25,10 +25,12 @@ func main() {
 			query.QueryColumn{Field: "Name"},
 		}
 		q.Wheres = []query.QueryWhere{
-			query.QueryWhere{Field: "Code", Operator: "=", Value: "1"},
+			query.QueryWhere{Field: "Code", Operator: "=", Value: "1", Children: []query.QueryWhere{
+				query.QueryWhere{Field: "name", Operator: "=", Value: "12na'me"},
+			}},
 		}
-		exec := query.NewCaseExector(q)
-		exec.PrepareQuery(mysql)
+		exector := query.NewCaseExector(q)
+		exector.PrepareQuery(mysql)
 
 	}); err != nil {
 		glog.Errorf("di Provide error:%s", err)

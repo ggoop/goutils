@@ -41,14 +41,47 @@ func NewCaseExector(item QueryCase) IExector {
 	}
 	if item.Wheres != nil && len(item.Wheres) > 0 {
 		for _, v := range item.Wheres {
-			if v.Operator == "contains" {
-				exector.Where(fmt.Sprintf("%v like ?", v.Field), "%"+v.Value+"%")
-			} else if v.Operator == "in" || v.Operator == "not in" {
-				exector.Where(fmt.Sprintf("%v %s (?)", v.Field, v.Operator), v.Value)
-			} else if v.Operator == "=" || v.Operator == "<>" || v.Operator == ">" || v.Operator == ">=" || v.Operator == "<" || v.Operator == "<=" {
-				exector.Where(fmt.Sprintf("%v %s ?", v.Field, v.Operator), v.Value)
+			iw := queryWhereToIWhere(v)
+			if iw != nil {
+				if iw.GetLogical() == "or" {
+					iw = exector.OrWhere(iw.GetQuery(), iw.GetArgs())
+				} else {
+					iw = exector.Where(iw.GetQuery(), iw.GetArgs())
+				}
+				if v.Children != nil && len(v.Children) > 0 {
+					for _, item := range v.Children {
+						addSubItemToIWhere(iw, item)
+					}
+				}
 			}
 		}
 	}
 	return exector
+}
+func addSubItemToIWhere(iw IWhere, subValue QueryWhere) {
+	newIw := queryWhereToIWhere(subValue)
+	if iw.GetLogical() == "or" {
+		newIw = iw.OrWhere(newIw.GetQuery(), newIw.GetArgs())
+	} else {
+		newIw = iw.Where(newIw.GetQuery(), newIw.GetArgs())
+	}
+	if subValue.Children != nil && len(subValue.Children) > 0 {
+		for _, item := range subValue.Children {
+			addSubItemToIWhere(newIw, item)
+		}
+	}
+}
+func queryWhereToIWhere(value QueryWhere) IWhere {
+	item := oqlWhere{Logical: value.Logical}
+	if value.Field != "" && value.Operator == "contains" {
+		item.Query = fmt.Sprintf("%v like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value + "%"}
+	} else if value.Field != "" && (value.Operator == "in" || value.Operator == "not in") {
+		item.Query = fmt.Sprintf("%v %s (?)", value.Field, value.Operator)
+		item.Args = []interface{}{value.Value}
+	} else if value.Field != "" && (value.Operator == "=" || value.Operator == "<>" || value.Operator == ">" || value.Operator == ">=" || value.Operator == "<" || value.Operator == "<=") {
+		item.Query = fmt.Sprintf("%v %s ?", value.Field, value.Operator)
+		item.Args = []interface{}{value.Value}
+	}
+	return &item
 }
