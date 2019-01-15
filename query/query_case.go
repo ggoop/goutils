@@ -1,6 +1,10 @@
 package query
 
-import "github.com/ggoop/goutils/md"
+import (
+	"fmt"
+
+	"github.com/ggoop/goutils/md"
+)
 
 type QueryCase struct {
 	md.ModelUnscoped
@@ -20,4 +24,31 @@ type QueryCase struct {
 
 func (s *QueryCase) MD() *md.Mder {
 	return &md.Mder{ID: "01e916da3fbb092f44be8cec4b7174de", Name: "查询方案"}
+}
+func NewCaseExector(item QueryCase) IExector {
+	if item.Query == nil {
+		return nil
+	}
+	exector := NewExector(item.Query.Entry)
+	if item.Columns != nil && len(item.Columns) > 0 {
+		for _, v := range item.Columns {
+			if v.ColumnName != "" {
+				exector.Select(v.Field + " as " + v.ColumnName)
+			} else {
+				exector.Select(v.Field)
+			}
+		}
+	}
+	if item.Wheres != nil && len(item.Wheres) > 0 {
+		for _, v := range item.Wheres {
+			if v.Operator == "contains" {
+				exector.Where(fmt.Sprintf("%v like ?", v.Field), "%"+v.Value+"%")
+			} else if v.Operator == "in" || v.Operator == "not in" {
+				exector.Where(fmt.Sprintf("%v %s (?)", v.Field, v.Operator), v.Value)
+			} else if v.Operator == "=" || v.Operator == "<>" || v.Operator == ">" || v.Operator == ">=" || v.Operator == "<" || v.Operator == "<=" {
+				exector.Where(fmt.Sprintf("%v %s ?", v.Field, v.Operator), v.Value)
+			}
+		}
+	}
+	return exector
 }

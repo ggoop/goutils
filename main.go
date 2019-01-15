@@ -24,7 +24,12 @@ func main() {
 			query.QueryColumn{Field: "Org.Name"},
 			query.QueryColumn{Field: "Name"},
 		}
-		query.RunCase(mysql, q)
+		q.Wheres = []query.QueryWhere{
+			query.QueryWhere{Field: "Code", Operator: "=", Value: "1"},
+		}
+		exec := query.NewCaseExector(q)
+		exec.PrepareQuery(mysql)
+
 	}); err != nil {
 		glog.Errorf("di Provide error:%s", err)
 	}

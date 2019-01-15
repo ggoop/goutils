@@ -69,6 +69,7 @@ type QueryWhere struct {
 	QueryID  string       `gorm:"name:查询ID" json:"query_id"`
 	CaseID   string       `gorm:"name:方案ID" json:"case_id"`
 	ParentID string       `gorm:"size:100" json:"parent_id"`
+	Logical  string       `gorm:"size:10;name:逻辑" json:"logical"` //and or
 	Field    string       `gorm:"size:100;name:字段" json:"field"`
 	Type     string       `gorm:"size:100;name:类型" json:"type"`
 	Operator string       `gorm:"size:100;name:操作符号" json:"operator"`
