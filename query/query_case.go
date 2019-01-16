@@ -58,7 +58,7 @@ func NewCaseExector(item QueryCase) IExector {
 	}
 	return exector
 }
-func addSubItemToIWhere(iw IWhere, subValue QueryWhere) {
+func addSubItemToIWhere(iw IQWhere, subValue QueryWhere) {
 	newIw := queryWhereToIWhere(subValue)
 	if iw.GetLogical() == "or" {
 		newIw = iw.OrWhere(newIw.GetQuery(), newIw.GetArgs())
@@ -71,8 +71,8 @@ func addSubItemToIWhere(iw IWhere, subValue QueryWhere) {
 		}
 	}
 }
-func queryWhereToIWhere(value QueryWhere) IWhere {
-	item := oqlWhere{Logical: value.Logical}
+func queryWhereToIWhere(value QueryWhere) IQWhere {
+	item := qWhere{Logical: value.Logical}
 	if value.Field != "" && value.Operator == "contains" {
 		item.Query = fmt.Sprintf("%v like ?", value.Field)
 		item.Args = []interface{}{"%" + value.Value + "%"}

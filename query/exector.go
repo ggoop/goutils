@@ -14,13 +14,14 @@ import (
 type IExector interface {
 	PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error)
 	Select(query string, args ...interface{}) IExector
-	Where(query string, args ...interface{}) IWhere
-	OrWhere(query string, args ...interface{}) IWhere
+	Where(query string, args ...interface{}) IQWhere
+	OrWhere(query string, args ...interface{}) IQWhere
 	Joins(query string, args ...interface{}) IExector
 	Group(query string, args ...interface{}) IExector
 }
 type oqlEntity struct {
 	Alia     string
+	IsMain   bool
 	Entity   *md.MDEntity
 	Path     string
 	Sequence int
@@ -32,6 +33,7 @@ type oqlField struct {
 }
 type oqlFrom struct {
 	Query string
+	Alia  string
 	Expr  string
 }
 type oqlJoin struct {
@@ -41,7 +43,6 @@ type oqlJoin struct {
 }
 type oqlSelect struct {
 	Query string
-	Name  string
 	Expr  string
 	Args  []interface{}
 }
@@ -60,26 +61,26 @@ type oqlGroup struct {
 type exector struct {
 	entities map[string]*oqlEntity
 	fields   map[string]*oqlField
-	from     *oqlFrom
+	froms    []*oqlFrom
 	selects  []*oqlSelect
 	joins    []*oqlJoin
-	wheres   []*oqlWhere
+	wheres   []*qWhere
 	orders   []*oqlOrder
 	groups   []*oqlGroup
 }
 
 func NewExector(query string) IExector {
-	from := &oqlFrom{Query: query}
 	exec := &exector{
 		entities: make(map[string]*oqlEntity),
 		fields:   make(map[string]*oqlField),
-		from:     from,
+		froms:    make([]*oqlFrom, 0),
 		selects:  make([]*oqlSelect, 0),
 		joins:    make([]*oqlJoin, 0),
-		wheres:   make([]*oqlWhere, 0),
+		wheres:   make([]*qWhere, 0),
 		orders:   make([]*oqlOrder, 0),
 		groups:   make([]*oqlGroup, 0),
 	}
+	exec.From(query)
 	return exec
 }
 
@@ -93,60 +94,111 @@ func (m *exector) FormatField(entity *oqlEntity, field *md.MDField) *oqlField {
 }
 func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) {
 	//parse
-	m.parseFromField(m.from)
-	if m.selects != nil && len(m.selects) > 0 {
-		for _, v := range m.selects {
-			if v.Name == "" {
-				v.Name = strings.Replace(v.Query, ".", "_", -1)
-			}
-			m.parseSelectField(v)
-		}
+	for _, v := range m.froms {
+		m.parseFromField(v)
 	}
-	if m.orders != nil && len(m.orders) > 0 {
-		for _, v := range m.orders {
-			m.parseOrderField(v)
-		}
+	for _, v := range m.selects {
+		m.parseSelectField(v)
 	}
-	if m.wheres != nil && len(m.wheres) > 0 {
-		for _, v := range m.wheres {
-			m.parseWhereField(v)
-		}
+	for _, v := range m.wheres {
+		m.parseWhereField(v)
+	}
+	for _, v := range m.orders {
+		m.parseOrderField(v)
+	}
+	for _, v := range m.groups {
+		m.parseGroupField(v)
 	}
 	//build
-	queryDB := mysql.Table(m.from.Expr)
+
+	queryDB := m.buildFroms(mysql)
 	queryDB = m.buildSelects(queryDB)
 	queryDB = m.buildJoins(queryDB)
-	queryDB = m.buildWheres(queryDB, m.wheres)
-	count := 0
-	queryDB.Count(&count)
+
+	if whereExpr, whereArgs, tag := m.buildWheres(m.wheres); tag > 0 {
+		queryDB = queryDB.Where(whereExpr, whereArgs...)
+	}
+	queryDB = m.buildGroups(queryDB)
+	queryDB = m.buildOrders(queryDB)
 	return queryDB, nil
 }
 
 ///=============== build
+func (m *exector) buildFroms(mysql *repositories.MysqlRepo) *gorm.DB {
+	parts := []string{}
+	for _, v := range m.froms {
+		parts = append(parts, v.Expr)
+	}
+	return mysql.Table(strings.Join(parts, ","))
+}
 func (m *exector) buildSelects(queryDB *gorm.DB) *gorm.DB {
 	selects := make([]string, 0)
-	if m.selects != nil && len(m.selects) > 0 {
-		for _, v := range m.selects {
-			field := m.parseField(v.Query)
-			if field != nil {
-				selects = append(selects, fmt.Sprintf("%v.%v as %v", field.Entity.Alia, field.Field.DBName, v.Name))
-			}
+	for _, v := range m.selects {
+		if v.Expr != "" {
+			selects = append(selects, v.Expr)
 		}
 	}
 	queryDB = queryDB.Select(selects)
 	return queryDB
 }
-func (m *exector) buildWheres(queryDB *gorm.DB, wheres []*oqlWhere) *gorm.DB {
+func (m *exector) buildWheres(wheres []*qWhere) (string, []interface{}, int) {
+	if wheres == nil || len(wheres) == 0 {
+		return "", nil, 0
+	}
+	tag := 0
+	exprs := []string{}
+	args := []interface{}{}
 	if wheres != nil && len(wheres) > 0 {
 		for _, v := range wheres {
-			if v.Expr != "" {
-				queryDB = queryDB.Where(v.Expr, v.Args...)
-			}
-			if v.Children != nil && len(v.Children) > 0 {
-				queryDB = m.buildWheres(queryDB, v.Children)
+			subExpr, subArgs, subTag := m.buildWheres(v.Children)
+			tag += subTag
+			if v.Expr != "" { //当前节点加上子节点
+				if len(exprs) > 0 {
+					exprs = append(exprs, " ", v.Logical, " ")
+				}
+				if subTag > 0 {
+					// (a=b and (a=1 or a=2))
+					exprs = append(exprs, "((", v.Expr, ") ", v.Logical, " ", subExpr, ")")
+					args = append(args, v.Args...)
+					args = append(args, subArgs...)
+				} else {
+					exprs = append(exprs, "(", v.Expr, ")")
+					args = append(args, v.Args...)
+				}
+				tag += 1
+			} else if subTag > 0 { //仅仅有子节点
+				if len(exprs) > 0 {
+					exprs = append(exprs, " ", v.Logical, " ")
+				}
+				if subTag > 1 {
+					exprs = append(exprs, "(", subExpr, ")")
+				} else {
+					exprs = append(exprs, subExpr)
+				}
+				args = append(args, subArgs...)
 			}
 		}
 	}
+	return strings.Join(exprs, ""), args, tag
+}
+func (m *exector) buildGroups(queryDB *gorm.DB) *gorm.DB {
+	selects := make([]string, 0)
+	for _, v := range m.groups {
+		if v.Expr != "" {
+			selects = append(selects, v.Expr)
+		}
+	}
+	queryDB = queryDB.Group(strings.Join(selects, ","))
+	return queryDB
+}
+func (m *exector) buildOrders(queryDB *gorm.DB) *gorm.DB {
+	selects := make([]string, 0)
+	for _, v := range m.orders {
+		if v.Expr != "" {
+			selects = append(selects, v.Expr)
+		}
+	}
+	queryDB = queryDB.Order(strings.Join(selects, ","))
 	return queryDB
 }
 func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
@@ -158,7 +210,7 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 		return tables[i].Sequence < tables[j].Sequence
 	})
 	for _, t := range tables {
-		if t.Path == "" {
+		if t.Path == "" || t.IsMain {
 			continue
 		}
 		relationship := m.parseField(t.Path)
@@ -180,7 +232,7 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 }
 
 ///=============== parse
-func (m *exector) parseWhereField(value *oqlWhere) {
+func (m *exector) parseWhereField(value *qWhere) {
 	if value.Query != "" {
 		parts := strings.Split(strings.TrimSpace(value.Query), " ")
 		field := m.parseField(parts[0])
@@ -196,22 +248,27 @@ func (m *exector) parseWhereField(value *oqlWhere) {
 	}
 }
 func (m *exector) parseFromField(value *oqlFrom) {
-	parts := strings.Split(strings.TrimSpace(value.Query), " ")
-	form := m.parseEntity(parts[0], "")
-	if len(parts) > 1 && form != nil {
-		form.Alia = parts[len(parts)-1]
-	}
-	if form != nil {
-		value.Expr = fmt.Sprintf("%s as %s", form.Entity.TableName, form.Alia)
-	} else {
-		value.Expr = strings.Join(parts, " as ")
-	}
-}
-func (m *exector) parseSelectField(value *oqlSelect) {
-	items := strings.Split(value.Query, ",")
+	items := strings.Split(strings.TrimSpace(value.Query), ",")
 	strs := []string{}
 	for _, item := range items {
 		parts := strings.Split(strings.TrimSpace(item), " ")
+		if len(parts) == 1 {
+			parts = append(parts, "")
+		}
+		form := m.parseEntity(parts[0], parts[len(parts)-1])
+		form.IsMain = true
+		strs = append(strs, fmt.Sprintf("%s as %s", form.Entity.TableName, form.Alia))
+	}
+	value.Expr = strings.Join(strs, ",")
+}
+func (m *exector) parseSelectField(value *oqlSelect) {
+	items := strings.Split(strings.TrimSpace(value.Query), ",")
+	strs := []string{}
+	for _, item := range items {
+		parts := strings.Split(strings.TrimSpace(item), " ")
+		if len(parts) < 2 {
+			parts = append(parts, "as", strings.ToLower(strings.Replace(parts[0], ".", "_", -1)))
+		}
 		field := m.parseField(parts[0])
 		if field != nil {
 			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName)
@@ -220,8 +277,22 @@ func (m *exector) parseSelectField(value *oqlSelect) {
 	}
 	value.Expr = strings.Join(strs, ",")
 }
+
+func (m *exector) parseGroupField(value *oqlGroup) {
+	items := strings.Split(strings.TrimSpace(value.Query), ",")
+	strs := []string{}
+	for _, item := range items {
+		field := m.parseField(strings.TrimSpace(item))
+		if field != nil {
+			strs = append(strs, fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName))
+		} else {
+			strs = append(strs, item)
+		}
+	}
+	value.Expr = strings.Join(strs, ",")
+}
 func (m *exector) parseOrderField(value *oqlOrder) {
-	items := strings.Split(value.Query, ",")
+	items := strings.Split(strings.TrimSpace(value.Query), ",")
 	strs := []string{}
 	for _, item := range items {
 		parts := strings.Split(strings.TrimSpace(item), " ")
@@ -259,14 +330,40 @@ func (m *exector) parseField(fieldPath string) *oqlField {
 	if v, ok := m.fields[fieldPath]; ok {
 		return v
 	}
+	start := 0
 	parts := strings.Split(fieldPath, ".")
-	entity := m.entities[""]
+	var mainFrom *oqlFrom
+	if len(parts) > 1 {
+		for i, v := range m.froms {
+			if v.Alia != "" && strings.ToLower(v.Alia) == parts[0] {
+				mainFrom = m.froms[i]
+				start = 1
+				break
+			}
+		}
+	}
+	if mainFrom == nil {
+		for i, v := range m.froms {
+			if v.Alia == "" {
+				mainFrom = m.froms[i]
+				break
+			}
+		}
+	}
+	if mainFrom == nil {
+		mainFrom = m.froms[0]
+	}
+	entity := m.entities[strings.ToLower(mainFrom.Alia)]
+
 	path := ""
 	for i, part := range parts {
 		if i > 0 {
 			path += "."
 		}
 		path += part
+		if i < start {
+			continue
+		}
 		mdField := entity.Entity.GetField(part)
 		if mdField == nil {
 			return nil
@@ -295,13 +392,13 @@ func (m *exector) Select(query string, args ...interface{}) IExector {
 // fieldA =?
 // fieldB =''
 // FieldC is null
-func (m *exector) Where(query string, args ...interface{}) IWhere {
-	item := &oqlWhere{Query: query, Args: args, Logical: "and"}
+func (m *exector) Where(query string, args ...interface{}) IQWhere {
+	item := &qWhere{Query: query, Args: args, Logical: "and"}
 	m.wheres = append(m.wheres, item)
 	return item
 }
-func (m *exector) OrWhere(query string, args ...interface{}) IWhere {
-	item := &oqlWhere{Query: query, Args: args, Logical: "or"}
+func (m *exector) OrWhere(query string, args ...interface{}) IQWhere {
+	item := &qWhere{Query: query, Args: args, Logical: "or"}
 	m.wheres = append(m.wheres, item)
 	return item
 }
@@ -328,5 +425,22 @@ func (m *exector) Group(query string, args ...interface{}) IExector {
 func (m *exector) Order(query string, args ...interface{}) IExector {
 	item := &oqlOrder{Query: query, Args: args}
 	m.orders = append(m.orders, item)
+	return m
+}
+
+// tableA
+// tableA a
+// tableA as a
+// tableA,tableB
+func (m *exector) From(query string) IExector {
+	items := strings.Split(strings.TrimSpace(query), ",")
+	for _, item := range items {
+		parts := strings.Split(strings.TrimSpace(item), " ")
+		item := &oqlFrom{Query: item}
+		if len(parts) > 1 {
+			item.Alia = parts[len(parts)-1]
+		}
+		m.froms = append(m.froms, item)
+	}
 	return m
 }
