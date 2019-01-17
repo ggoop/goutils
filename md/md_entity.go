@@ -5,7 +5,7 @@ import "strings"
 type MDEntity struct {
 	ModelUnscoped
 	TypeID    string  // enum,entity
-	Type      *MDEnum `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;limit:type='md.data.type'"`
+	Type      *MDEnum `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;limit:md.data.type"`
 	Code      string
 	Name      string
 	FullName  string

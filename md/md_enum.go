@@ -9,7 +9,7 @@ type MDEnumType struct {
 }
 
 func (s *MDEnumType) MD() *Mder {
-	return &Mder{ID: "01e9125fe960a71bb1b47427ea1d5200", Name: "分类组"}
+	return &Mder{ID: "01e9125fe960a71bb1b47427ea1d5200", Name: "枚举"}
 }
 
 type MDEnum struct {
@@ -23,5 +23,5 @@ type MDEnum struct {
 }
 
 func (s *MDEnum) MD() *Mder {
-	return &Mder{ID: "01e9125fe9611c4dc8d47427ea1d5200", Name: "分类"}
+	return &Mder{ID: "01e9125fe9611c4dc8d47427ea1d5200", Name: "枚举值"}
 }

@@ -218,20 +218,23 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 			glog.Errorf("找不到关联字段")
 			continue
 		}
-		if relationship.Field.TypeType==md.TYPE_ENTITY{
-			if relationship.Field.Kind == "belongs_to" || relationship.Field.Kind == "has_one" {
-				fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
-				lkey := t.Entity.GetField(relationship.Field.AssociationKey)
-				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName))
-			} else if relationship.Field.Kind == "has_many" {
-				fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
-				lkey := t.Entity.GetField(relationship.Field.AssociationKey)
-				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
+		if relationship.Field.Kind == "belongs_to" || relationship.Field.Kind == "has_one" {
+			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
+			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+			args := []interface{}{}
+			condition := ""
+			if relationship.Field.TypeType == md.TYPE_ENUM {
+				if relationship.Field.Limit != "" {
+					condition = fmt.Sprintf(" and %v.type=?", t.Alia)
+					args = append(args, relationship.Field.Limit)
+				}
 			}
-		}else if relationship.Field.TypeType==md.TYPE_ENUM{
-			
+			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName, condition), args...)
+		} else if relationship.Field.Kind == "has_many" {
+			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
+			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
 		}
-		
 	}
 	return queryDB
 }
@@ -376,7 +379,7 @@ func (m *exector) parseField(fieldPath string) *oqlField {
 		field := m.FormatField(entity, mdField)
 		field.Path = path
 		m.fields[path] = field
-		if i < len(parts)-1 && mdField.TypeType == md.TYPE_ENTITY {
+		if i < len(parts)-1 {
 			entity = m.parseEntity(mdField.TypeID, path)
 		} else {
 			return field

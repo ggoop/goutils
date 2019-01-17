@@ -159,15 +159,17 @@ func (m *md) Migrate() {
 }
 
 func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
+	//先增加模型表
 	if !initMD {
 		initMD = true
-		//先增加模型表
-		db.AutoMigrate(&MDEntity{}, &MDField{}, &MDEnumType{}, &MDEnum{})
-		m := newMd(&MDEntity{}, db)
-		m.Migrate()
-
-		m = newMd(&MDField{}, db)
-		m.Migrate()
+		mds := []interface{}{
+			&MDEntity{}, &MDField{}, &MDEnumType{}, &MDEnum{},
+		}
+		db.AutoMigrate(mds...)
+		for _, v := range mds {
+			m := newMd(v, db)
+			m.Migrate()
+		}
 	}
 	for _, value := range values {
 		m := newMd(value, db)

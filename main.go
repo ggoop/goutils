@@ -13,7 +13,7 @@ func main() {
 	for i := 0; i < 100; i++ {
 		glog.Errorf("%v\r\n", utils.GUID())
 	}
-	test_query()
+	// test_query()
 }
 func test_query() {
 	di.SetGlobal(di.New())
@@ -22,24 +22,10 @@ func test_query() {
 	if err := di.Global.Invoke(func(mysql *repositories.MysqlRepo) {
 		md.Migrate(mysql, query.QueryCase{})
 		q := query.QueryCase{}
-		q.Query = &query.Query{Entry: "CboTeam as a", Code: "CboTeam"}
+		q.Query = &query.Query{Entry: "MDEntity as a", Code: "MDEntity"}
 		q.Columns = []query.QueryColumn{
-			query.QueryColumn{Field: "a.Code"},
-			query.QueryColumn{Field: "Dept.Org.Name"},
-			query.QueryColumn{Field: "a.Org.Name"},
 			query.QueryColumn{Field: "Name"},
-		}
-		q.Wheres = []query.QueryWhere{
-			query.QueryWhere{
-				Field: "a.Code", Operator: "=", Value: "1", Children: []query.QueryWhere{
-					query.QueryWhere{Field: "name", Operator: "=", Value: "12na'me"},
-					query.QueryWhere{Field: "code", Operator: "=", Value: "code"},
-				},
-			},
-			query.QueryWhere{Logical: "or", Children: []query.QueryWhere{
-				query.QueryWhere{Field: "id", Operator: "=", Value: "1"},
-				query.QueryWhere{Field: "id", Operator: "=", Value: "2"},
-			}},
+			query.QueryColumn{Field: "Type.Name"},
 		}
 		exector := query.NewCaseExector(q)
 		if qc, err := exector.PrepareQuery(mysql); err != nil {
