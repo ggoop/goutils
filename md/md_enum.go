@@ -1,11 +1,15 @@
 package md
 
+import "time"
+
 type MDEnumType struct {
-	ModelUnscoped
-	EntID    string `gorm:"size:100"`
-	Name     string
-	Memo     string
-	IsSystem bool
+	ID        string    `gorm:"primary_key;size:100" json:"id"`
+	CreatedAt time.Time `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt time.Time `gorm:"name:更新时间" json:"updated_at"`
+	EntID     string    `gorm:"size:100"`
+	Name      string
+	Memo      string
+	IsSystem  bool
 }
 
 func (s *MDEnumType) MD() *Mder {
@@ -13,13 +17,15 @@ func (s *MDEnumType) MD() *Mder {
 }
 
 type MDEnum struct {
-	ModelUnscoped
-	EntID    string `gorm:"size:100"`
-	Type     string `gorm:"primary_key;size:100"`
-	Name     string
-	Memo     string
-	Sequence int
-	IsSystem bool
+	ID        string    `gorm:"primary_key;size:100" json:"id"`
+	CreatedAt time.Time `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt time.Time `gorm:"name:更新时间" json:"updated_at"`
+	EntID     string    `gorm:"size:100"`
+	Type      string    `gorm:"primary_key;size:100"`
+	Name      string
+	Memo      string
+	Sequence  int
+	IsSystem  bool
 }
 
 func (s *MDEnum) MD() *Mder {
