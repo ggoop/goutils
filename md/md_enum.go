@@ -1,7 +1,7 @@
 package md
 
 type MDEnumType struct {
-	Model
+	ModelUnscoped
 	EntID    string `gorm:"size:100"`
 	Name     string
 	Memo     string
@@ -13,10 +13,9 @@ func (s *MDEnumType) MD() *Mder {
 }
 
 type MDEnum struct {
-	Model
+	ModelUnscoped
 	EntID    string `gorm:"size:100"`
-	GroupID  string `gorm:"size:100"`
-	Code     string
+	Type     string `gorm:"primary_key;size:100"`
 	Name     string
 	Memo     string
 	Sequence int

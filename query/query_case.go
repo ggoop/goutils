@@ -32,8 +32,8 @@ func NewCaseExector(item QueryCase) IExector {
 	exector := NewExector(item.Query.Entry)
 	if item.Columns != nil && len(item.Columns) > 0 {
 		for _, v := range item.Columns {
-			if v.ColumnName != "" {
-				exector.Select(v.Field + " as " + v.ColumnName)
+			if v.Name != "" {
+				exector.Select(v.Field + " as " + v.Name)
 			} else {
 				exector.Select(v.Field)
 			}

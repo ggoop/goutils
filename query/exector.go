@@ -218,15 +218,20 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 			glog.Errorf("找不到关联字段")
 			continue
 		}
-		if relationship.Field.Kind == "belongs_to" || relationship.Field.Kind == "has_one" {
-			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
-			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName))
-		} else if relationship.Field.Kind == "has_many" {
-			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
-			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
+		if relationship.Field.TypeType==md.TYPE_ENTITY{
+			if relationship.Field.Kind == "belongs_to" || relationship.Field.Kind == "has_one" {
+				fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
+				lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName))
+			} else if relationship.Field.Kind == "has_many" {
+				fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
+				lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
+			}
+		}else if relationship.Field.TypeType==md.TYPE_ENUM{
+			
 		}
+		
 	}
 	return queryDB
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/query"
 	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
@@ -12,12 +13,14 @@ func main() {
 	for i := 0; i < 100; i++ {
 		glog.Errorf("%v\r\n", utils.GUID())
 	}
-	// test_query()
+	test_query()
 }
 func test_query() {
 	di.SetGlobal(di.New())
 	di.Global.Provide(repositories.NewMysqlRepo)
+
 	if err := di.Global.Invoke(func(mysql *repositories.MysqlRepo) {
+		md.Migrate(mysql, query.QueryCase{})
 		q := query.QueryCase{}
 		q.Query = &query.Query{Entry: "CboTeam as a", Code: "CboTeam"}
 		q.Columns = []query.QueryColumn{

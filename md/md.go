@@ -130,7 +130,10 @@ func (m *md) Migrate() {
 				}
 			}
 		}
-		if newField.TypeID != "" {
+		newField.Limit = field.TagSettings["LIMIT"]
+		if newField.TypeID == "01e9125fe9611c4dc8d47427ea1d5200" || reflectType.Name() == "MDEnum" {
+			newField.TypeType = TYPE_ENUM
+		} else if newField.TypeID != "" {
 			newField.TypeType = TYPE_ENTITY
 		} else {
 			newField.TypeType = reflectType.Name()
@@ -144,7 +147,7 @@ func (m *md) Migrate() {
 			m.db.Create(&newField)
 		} else if oldField.Name != newField.Name || oldField.DBName != newField.DBName || oldField.AssociationKey != newField.AssociationKey || oldField.ForeignKey != newField.ForeignKey ||
 			oldField.IsNormal != newField.IsNormal || oldField.IsPrimaryKey != newField.IsPrimaryKey ||
-			oldField.Kind != newField.Kind || oldField.TypeID != newField.TypeID || oldField.TypeType != newField.TypeType {
+			oldField.Kind != newField.Kind || oldField.TypeID != newField.TypeID || oldField.TypeType != newField.TypeType || oldField.Limit != newField.Limit {
 			//变更的
 			m.db.Model(oldField).Update(newField)
 		}

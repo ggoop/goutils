@@ -23,13 +23,18 @@ func (s *Query) MD() *md.Mder {
 
 type QueryField struct {
 	md.ModelUnscoped
-	QueryID string `gorm:"name:查询ID" json:"query_id"`
-	Query   *Query `gorm:"name:查询" json:"case_id"`
-	Type    string `gorm:"size:100;name:字段类型" json:"type"` //string,enum,entity,bool,datetime
-	Field   string `gorm:"size:100;name:字段" json:"field"`
-	Name    string `gorm:"name:名称" json:"name"`
-	Memo    string `gorm:"name:备注" json:"memo"`
-	Hidden  bool   `gorm:"name:隐藏" json:"hidden"`
+	QueryID    string `gorm:"name:查询ID" json:"query_id"`
+	Query      *Query `gorm:"name:查询" json:"case_id"`
+	Type       string `gorm:"size:100;name:字段类型" json:"type"` //string,enum,entity,bool,datetime
+	DataSourse string `gorm:"name:数据来源" json:"data_sourse"`
+	Field      string `gorm:"size:100;name:字段" json:"field"`
+	Group      string `gorm:"name:分组" json:"group"`
+	Name       string `gorm:"name:名称" json:"name"`
+	Memo       string `gorm:"name:备注" json:"memo"`
+	Hidden     bool   `gorm:"name:隐藏" json:"hidden"`
+	IsColumn   bool   `gorm:"name:隐藏" json:"is_column"`
+	IsOrder    bool   `gorm:"name:隐藏" json:"is_order"`
+	IsWhere    bool   `gorm:"name:隐藏" json:"is_where"`
 }
 
 func (s *QueryField) MD() *md.Mder {
@@ -38,13 +43,14 @@ func (s *QueryField) MD() *md.Mder {
 
 type QueryColumn struct {
 	md.ModelUnscoped
-	QueryID    string `gorm:"name:查询ID" json:"query_id"`
-	CaseID     string `gorm:"name:方案ID" json:"case_id"`
-	Field      string `gorm:"size:100;name:字段" json:"field"`
-	ColumnName string `gorm:"size:100;name:栏目名称" json:"column_name"`
-	Title      string `gorm:"name:显示名称" json:"title"`
-	Sequence   int    `gorm:"name:顺序" json:"sequence"`
-	Width      string `gorm:"name:宽度" json:"width"`
+	QueryID  string `gorm:"name:查询ID" json:"query_id"`
+	CaseID   string `gorm:"name:方案ID" json:"case_id"`
+	Field    string `gorm:"size:100;name:字段" json:"field"`
+	Name     string `gorm:"size:100;name:栏目编码" json:"name"`
+	Title    string `gorm:"name:显示名称" json:"title"`
+	Sequence int    `gorm:"name:顺序" json:"sequence"`
+	Width    string `gorm:"name:宽度" json:"width"`
+	Hidden   bool   `gorm:"name:隐藏" json:"hidden"`
 }
 
 func (s *QueryColumn) MD() *md.Mder {
@@ -57,6 +63,7 @@ type QueryOrder struct {
 	CaseID   string `gorm:"name:方案ID" json:"case_id"`
 	Field    string `gorm:"size:100;name:字段"  json:"field"`
 	IsDesc   bool   `gorm:"name:降序"  json:"is_desc"`
+	Hidden   bool   `gorm:"name:隐藏" json:"hidden"`
 	Sequence int    `gorm:"name:顺序"  json:"sequence"`
 }
 

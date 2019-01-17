@@ -4,15 +4,15 @@ import "strings"
 
 type MDEntity struct {
 	ModelUnscoped
-	Type      string // enum,entity
+	TypeID    string  // enum,entity
+	Type      *MDEnum `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;limit:type='md.data.type'"`
 	Code      string
 	Name      string
 	FullName  string
 	TableName string
 	Memo      string
 	Fields    []MDField `gorm:"foreignkey:EntityID"`
-
-	cache map[string]MDField
+	cache     map[string]MDField
 }
 
 func (s *MDEntity) MD() *Mder {
@@ -48,6 +48,7 @@ type MDField struct {
 	Kind           string
 	TypeID         string
 	TypeType       string
+	Limit          string
 	Type           *MDEntity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
 	Memo           string
 }
