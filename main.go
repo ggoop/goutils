@@ -27,8 +27,8 @@ func test_query() {
 			query.QueryColumn{Field: "Name"},
 			query.QueryColumn{Field: "Type.Name"},
 		}
-		exector := query.NewCaseExector(q)
-		if qc, err := exector.PrepareQuery(mysql); err != nil {
+		exector := q.GetExector()
+		if qc, err := exector.Query(mysql); err != nil {
 			glog.Errorf("errir is $v", err)
 		} else {
 			m := query.Query{}

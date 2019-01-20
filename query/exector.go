@@ -13,11 +13,16 @@ import (
 
 type IExector interface {
 	PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error)
+	Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error)
+	Count(mysql *repositories.MysqlRepo) int
 	Select(query string, args ...interface{}) IExector
 	Where(query string, args ...interface{}) IQWhere
 	OrWhere(query string, args ...interface{}) IQWhere
 	Joins(query string, args ...interface{}) IExector
+	Order(query string, args ...interface{}) IExector
 	Group(query string, args ...interface{}) IExector
+	Page(page, pageSize int) IExector
+	SetContext(context map[string]interface{}) IExector
 }
 type oqlEntity struct {
 	Alia     string
@@ -67,6 +72,9 @@ type exector struct {
 	wheres   []*qWhere
 	orders   []*oqlOrder
 	groups   []*oqlGroup
+	page     int
+	pageSize int
+	context  map[string]interface{}
 }
 
 func NewExector(query string) IExector {
@@ -83,14 +91,80 @@ func NewExector(query string) IExector {
 	exec.From(query)
 	return exec
 }
+func (m *exector) Page(page, pageSize int) IExector {
+	m.page = page
+	m.pageSize = pageSize
+	return m
+}
 
-func (m *exector) FormatEntity(entity *md.MDEntity) *oqlEntity {
+func (m *exector) formatEntity(entity *md.MDEntity) *oqlEntity {
 	e := oqlEntity{Entity: entity}
 	return &e
 }
-func (m *exector) FormatField(entity *oqlEntity, field *md.MDField) *oqlField {
+func (m *exector) formatField(entity *oqlEntity, field *md.MDField) *oqlField {
 	e := oqlField{Entity: entity, Field: field}
 	return &e
+}
+func (m *exector) Count(mysql *repositories.MysqlRepo) int {
+	if q, err := m.PrepareQuery(mysql); err != nil {
+		return 0
+	} else {
+		count := 0
+		q.Count(&count)
+		return count
+	}
+}
+func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error) {
+	q, err := m.PrepareQuery(mysql)
+	if m.page > 0 && m.pageSize > 0 {
+		q = q.Limit(m.pageSize).Offset((m.page - 1) * m.pageSize)
+	}
+	rows, err := q.Rows()
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	columns, _ := rows.Columns()
+	columnTypes, _ := rows.ColumnTypes()
+	columnTypeMap := map[string]string{}
+	for _, c := range columnTypes {
+		columnTypeMap[c.Name()] = c.DatabaseTypeName()
+	}
+	results := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		values := make([]interface{}, len(columns))
+		for index, column := range columns {
+			dbType := columnTypeMap[column]
+			switch dbType {
+			case "VARCHAR", "TEXT", "NVARCHAR":
+				var ignored string
+				values[index] = &ignored
+				break
+			case "BOOL":
+				var ignored bool
+				values[index] = &ignored
+				break
+			case "INT", "BIGINT":
+				var ignored int
+				values[index] = &ignored
+				break
+			case "DECIMAL":
+				var ignored float64
+				values[index] = &ignored
+				break
+			default:
+				var ignored interface{}
+				values[index] = &ignored
+			}
+		}
+		rows.Scan(values...)
+		resultItem := make(map[string]interface{})
+		for index, column := range columns {
+			resultItem[column] = values[index]
+		}
+		results = append(results, resultItem)
+	}
+	return results, nil
 }
 func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) {
 	//parse
@@ -324,7 +398,7 @@ func (m *exector) parseEntity(id, path string) *oqlEntity {
 		glog.Errorf("找不到实体 %v", id)
 		return nil
 	}
-	v := m.FormatEntity(entity)
+	v := m.formatEntity(entity)
 	v.Sequence = len(m.entities) + 1
 	v.Alia = fmt.Sprintf("a%v", v.Sequence)
 	v.Path = path
@@ -376,7 +450,7 @@ func (m *exector) parseField(fieldPath string) *oqlField {
 		if mdField == nil {
 			return nil
 		}
-		field := m.FormatField(entity, mdField)
+		field := m.formatField(entity, mdField)
 		field.Path = path
 		m.fields[path] = field
 		if i < len(parts)-1 {
@@ -450,5 +524,9 @@ func (m *exector) From(query string) IExector {
 		}
 		m.froms = append(m.froms, item)
 	}
+	return m
+}
+func (m *exector) SetContext(context map[string]interface{}) IExector {
+	m.context = context
 	return m
 }
