@@ -51,7 +51,12 @@ func (t *Time) UnmarshalJSON(data []byte) (err error) {
 		data = data[:len(Layout_YYYMMDD)]
 	}
 	now, err := time.ParseInLocation("2006-01-02", string(data), time.Local)
-	*t = Time{now}
+	if now.UnixNano() < 0 || now.Unix() <= 0 {
+		*t = Time{}
+	} else {
+		*t = Time{now}
+	}
+
 	return
 }
 
