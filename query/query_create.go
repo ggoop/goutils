@@ -34,9 +34,9 @@ func SaveQuery(repo *repositories.MysqlRepo, item Query) (*Query, error) {
 		count := 0
 		for _, d := range item.Wheres {
 			count = 0
-			if repo.Model(d).Where("query_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
+			if repo.Model(d).Where("owner_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
 				d.ID = utils.GUID()
-				d.QueryID = item.ID
+				d.OwnerID = item.ID
 				repo.Create(&d)
 			}
 		}
@@ -45,9 +45,9 @@ func SaveQuery(repo *repositories.MysqlRepo, item Query) (*Query, error) {
 		count := 0
 		for _, d := range item.Columns {
 			count = 0
-			if repo.Model(d).Where("query_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
+			if repo.Model(d).Where("owner_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
 				d.ID = utils.GUID()
-				d.QueryID = item.ID
+				d.OwnerID = item.ID
 				repo.Create(&d)
 			}
 		}
@@ -56,9 +56,9 @@ func SaveQuery(repo *repositories.MysqlRepo, item Query) (*Query, error) {
 		count := 0
 		for _, d := range item.Orders {
 			count = 0
-			if repo.Model(d).Where("query_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
+			if repo.Model(d).Where("owner_id=? and field=?", item.ID, d.Field).Count(&count); count == 0 {
 				d.ID = utils.GUID()
-				d.QueryID = item.ID
+				d.OwnerID = item.ID
 				repo.Create(&d)
 			}
 		}

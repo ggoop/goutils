@@ -13,9 +13,9 @@ type Query struct {
 	Memo     string        `gorm:"name:备注"  json:"memo"`
 	PageSize int           `gorm:"default:30;name:每页显示记录数" json:"page_size"`
 	Fields   []QueryField  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;name:字段集合" json:"fields"`
-	Columns  []QueryColumn `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;name:栏目集合" json:"columns"`
-	Orders   []QueryOrder  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;name:排序集合" json:"orders"`
-	Wheres   []QueryWhere  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;name:条件集合" json:"wheres"`
+	Columns  []QueryColumn `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
+	Orders   []QueryOrder  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
+	Wheres   []QueryWhere  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
 }
 
 func (s *Query) MD() *md.Mder {
@@ -34,9 +34,9 @@ type QueryField struct {
 	Title        string `gorm:"name:显示名称" json:"title"`
 	Memo         string `gorm:"name:备注" json:"memo"`
 	Hidden       bool   `gorm:"name:隐藏" json:"hidden"`
-	IsColumn     bool   `gorm:"name:隐藏" json:"is_column"`
-	IsOrder      bool   `gorm:"name:隐藏" json:"is_order"`
-	IsWhere      bool   `gorm:"name:隐藏" json:"is_where"`
+	ColumnTag    int    `gorm:"name:隐藏" json:"column_tag"` //大于0时，启用，并表示顺序
+	OrderTag     int    `gorm:"name:隐藏" json:"order_tag"`  //大于0时，启用，并表示顺序
+	WhereTag     int    `gorm:"name:隐藏" json:"where_tag"`  //大于0时，启用，并表示顺序
 }
 
 func (s *QueryField) MD() *md.Mder {
@@ -45,14 +45,14 @@ func (s *QueryField) MD() *md.Mder {
 
 type QueryColumn struct {
 	md.ModelUnscoped
-	QueryID  string `gorm:"name:查询ID" json:"query_id"`
-	CaseID   string `gorm:"name:方案ID" json:"case_id"`
-	Field    string `gorm:"size:100;name:字段" json:"field"`
-	Name     string `gorm:"size:100;name:栏目编码" json:"name"`
-	Title    string `gorm:"name:显示名称" json:"title"`
-	Sequence int    `gorm:"name:顺序" json:"sequence"`
-	Width    string `gorm:"name:宽度" json:"width"`
-	Hidden   bool   `gorm:"name:隐藏" json:"hidden"`
+	OwnerID   string `gorm:"size:100;name:所属ID" json:"owner_id"`
+	OwnerType string `gorm:"size:100;name:所属类型" json:"owner_type"`
+	Field     string `gorm:"size:100;name:字段" json:"field"`
+	Name      string `gorm:"size:100;name:栏目编码" json:"name"`
+	Title     string `gorm:"name:显示名称" json:"title"`
+	Sequence  int    `gorm:"name:顺序" json:"sequence"`
+	Width     string `gorm:"name:宽度" json:"width"`
+	Hidden    bool   `gorm:"name:隐藏" json:"hidden"`
 }
 
 func (s *QueryColumn) MD() *md.Mder {
@@ -61,13 +61,13 @@ func (s *QueryColumn) MD() *md.Mder {
 
 type QueryOrder struct {
 	md.ModelUnscoped
-	QueryID  string `gorm:"name:查询ID" json:"query_id"`
-	CaseID   string `gorm:"name:方案ID" json:"case_id"`
-	Field    string `gorm:"size:100;name:字段"  json:"field"`
-	Title    string `gorm:"name:显示名称" json:"title"`
-	Order    string `gorm:"name:排序方式"  json:"order"`
-	Hidden   bool   `gorm:"name:隐藏" json:"hidden"`
-	Sequence int    `gorm:"name:顺序"  json:"sequence"`
+	OwnerID   string `gorm:"size:100;name:所属ID" json:"owner_id"`
+	OwnerType string `gorm:"size:100;name:所属类型" json:"owner_type"`
+	Field     string `gorm:"size:100;name:字段"  json:"field"`
+	Title     string `gorm:"name:显示名称" json:"title"`
+	Order     string `gorm:"name:排序方式"  json:"order"`
+	Hidden    bool   `gorm:"name:隐藏" json:"hidden"`
+	Sequence  int    `gorm:"name:顺序"  json:"sequence"`
 }
 
 func (s *QueryOrder) MD() *md.Mder {
@@ -76,8 +76,8 @@ func (s *QueryOrder) MD() *md.Mder {
 
 type QueryWhere struct {
 	md.ModelUnscoped
-	QueryID    string       `gorm:"name:查询ID" json:"query_id"`
-	CaseID     string       `gorm:"name:方案ID" json:"case_id"`
+	OwnerID    string       `gorm:"size:100;name:所属ID" json:"owner_id"`
+	OwnerType  string       `gorm:"size:100;name:所属类型" json:"owner_type"`
 	ParentID   string       `gorm:"size:100" json:"parent_id"`
 	Logical    string       `gorm:"size:10;name:逻辑" json:"logical"` //and or
 	Field      string       `gorm:"size:100;name:字段" json:"field"`

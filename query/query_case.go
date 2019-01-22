@@ -22,9 +22,9 @@ type QueryCase struct {
 	Memo      string                 `gorm:"name:备注" json:"memo"`
 	Page      int                    `gorm:"name:页码" json:"page"`
 	PageSize  int                    `gorm:"name:每页显示记录数" json:"page_size"`
-	Columns   []QueryColumn          `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:CaseID;name:栏目集合" json:"columns"`
-	Orders    []QueryOrder           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:CaseID;name:排序集合" json:"orders"`
-	Wheres    []QueryWhere           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:CaseID;name:条件集合" json:"wheres"`
+	Columns   []QueryColumn          `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
+	Orders    []QueryOrder           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
+	Wheres    []QueryWhere           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
 	Context   map[string]interface{} `gorm:"-" json:"context"` //上下文参数
 }
 
