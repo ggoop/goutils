@@ -17,8 +17,8 @@ type QueryCase struct {
 	QueryID   string                 `gorm:"name:查询ID" json:"case_id"`
 	Query     *Query                 `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;name:查询" json:"query"`
 	Name      string                 `gorm:"name:名称" json:"name"`
-	ScopeType string                 `gorm:"name:范围类型" json:"scope_type"`
-	ScopeID   string                 `gorm:"name:范围ID" json:"scope_id"`
+	ScopeID   string                 `gorm:"size:100;name:范围ID" json:"scope_id"`
+	ScopeType string                 `gorm:"size:100;name:范围类型" json:"scope_type"`
 	Memo      string                 `gorm:"name:备注" json:"memo"`
 	Page      int                    `gorm:"name:页码" json:"page"`
 	PageSize  int                    `gorm:"name:每页显示记录数" json:"page_size"`

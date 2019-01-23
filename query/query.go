@@ -34,9 +34,9 @@ type QueryField struct {
 	Title        string `gorm:"name:显示名称" json:"title"`
 	Memo         string `gorm:"name:备注" json:"memo"`
 	Hidden       bool   `gorm:"name:隐藏" json:"hidden"`
-	ColumnTag    int    `gorm:"name:隐藏" json:"column_tag"` //大于0时，启用，并表示顺序
-	OrderTag     int    `gorm:"name:隐藏" json:"order_tag"`  //大于0时，启用，并表示顺序
-	WhereTag     int    `gorm:"name:隐藏" json:"where_tag"`  //大于0时，启用，并表示顺序
+	IsColumn     bool   `gorm:"name:栏目" json:"is_column"`
+	IsOrder      bool   `gorm:"name:排序" json:"is_order"`
+	IsWhere      bool   `gorm:"name:条件" json:"is_where"`
 }
 
 func (s *QueryField) MD() *md.Mder {
@@ -52,6 +52,7 @@ type QueryColumn struct {
 	Title     string `gorm:"name:显示名称" json:"title"`
 	Sequence  int    `gorm:"name:顺序" json:"sequence"`
 	Width     string `gorm:"name:宽度" json:"width"`
+	Fixed     bool   `gorm:"name:固定" json:"fixed"`
 	Hidden    bool   `gorm:"name:隐藏" json:"hidden"`
 }
 
@@ -66,6 +67,7 @@ type QueryOrder struct {
 	Field     string `gorm:"size:100;name:字段"  json:"field"`
 	Title     string `gorm:"name:显示名称" json:"title"`
 	Order     string `gorm:"name:排序方式"  json:"order"`
+	Fixed     bool   `gorm:"name:固定" json:"fixed"`
 	Hidden    bool   `gorm:"name:隐藏" json:"hidden"`
 	Sequence  int    `gorm:"name:顺序"  json:"sequence"`
 }
