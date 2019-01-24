@@ -3,11 +3,11 @@ package md
 import "time"
 
 type MDEnumType struct {
-	ID        string    `gorm:"primary_key;size:100" json:"id"`
+	ID        string    `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt time.Time `gorm:"name:创建时间" json:"created_at"`
 	UpdatedAt time.Time `gorm:"name:更新时间" json:"updated_at"`
-	ScopeID   string    `gorm:"size:100;name:范围ID" json:"scope_id"`
-	ScopeType string    `gorm:"size:100;name:范围类型" json:"scope_type"`
+	ScopeID   string    `gorm:"size:50;name:范围ID" json:"scope_id"`
+	ScopeType string    `gorm:"size:50;name:范围类型" json:"scope_type"`
 	Name      string
 	Memo      string
 	IsSystem  bool
@@ -18,12 +18,12 @@ func (s *MDEnumType) MD() *Mder {
 }
 
 type MDEnum struct {
-	ID        string    `gorm:"primary_key;size:100" json:"id"`
+	ID        string    `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt time.Time `gorm:"name:创建时间" json:"created_at"`
 	UpdatedAt time.Time `gorm:"name:更新时间" json:"updated_at"`
-	ScopeID   string    `gorm:"primary_key;size:100;name:范围ID" json:"scope_id"`
-	ScopeType string    `gorm:"primary_key;size:100;name:范围类型" json:"scope_type"`
-	Type      string    `gorm:"primary_key;size:100"`
+	ScopeID   string    `gorm:"primary_key;size:50;name:范围ID" json:"scope_id"`
+	ScopeType string    `gorm:"primary_key;size:50;name:范围类型" json:"scope_type"`
+	Type      string    `gorm:"primary_key;size:50"`
 	Name      string
 	Memo      string
 	Sequence  int
