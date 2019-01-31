@@ -1,6 +1,7 @@
 package glog
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"sync"
@@ -102,13 +103,15 @@ func Fatalf(format string, args ...interface{}) {
 }
 
 // Error will print only when logger's Level is error, warn, info or debug.
-func Error(v ...interface{}) {
+func Error(v ...interface{}) error {
 	getInstance("").Error(v...)
+	return fmt.Errorf(fmt.Sprint(v...))
 }
 
 // Errorf will print only when logger's Level is error, warn, info or debug.
-func Errorf(format string, args ...interface{}) {
+func Errorf(format string, args ...interface{}) error {
 	getInstance("").Errorf(format, args...)
+	return fmt.Errorf(format, args...)
 }
 
 // Warn will print when logger's Level is warn, info or debug.
