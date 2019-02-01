@@ -17,6 +17,12 @@ const (
 	Layout_YYYYMMDDHHIISS = "2006-01-02 15:04:05"
 )
 
+func NewTime() Time {
+	return CreateTime(time.Now())
+}
+func NewTimePtr() *Time {
+	return CreateTimePtr(time.Now())
+}
 func CreateTime(value interface{}) Time {
 	if v, ok := value.(time.Time); ok {
 		return Time{v}

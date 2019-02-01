@@ -68,8 +68,7 @@ func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	quoted := make([]string, 0, len(mainFields))
 	for i := range mainFields {
 		mainField := mainFields[i]
-		if (mainField.IsPrimaryKey && mainField.IsBlank) || (mainField.IsIgnored) ||
-			(mainField.Field.Kind() == reflect.Struct && mainField.Field.Type().Name() != "Time") ||
+		if (mainField.IsPrimaryKey && mainField.IsBlank) || (mainField.IsIgnored) || (mainField.Relationship != nil) ||
 			(mainField.Field.Kind() == reflect.Slice && mainField.Field.Type().Elem().Kind() == reflect.Struct) {
 			continue
 		}
@@ -92,8 +91,7 @@ func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 				fields[i].Set(time.Now())
 			}
 
-			if (field.IsPrimaryKey && field.IsBlank) || (field.IsIgnored) ||
-				(field.Field.Kind() == reflect.Struct && field.Field.Type().Name() != "Time") ||
+			if (field.IsPrimaryKey && field.IsBlank) || (field.IsIgnored) || (field.Relationship != nil) ||
 				(field.Field.Kind() == reflect.Slice && field.Field.Type().Elem().Kind() == reflect.Struct) {
 				continue
 			}
@@ -127,6 +125,7 @@ func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 			strings.Join(placeholdersArr, ", "),
 		))
 		if _, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...); err != nil {
+			glog.Error(err)
 			return err
 		}
 	}
