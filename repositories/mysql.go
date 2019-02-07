@@ -18,7 +18,7 @@ type MysqlRepo struct {
 
 func NewMysqlRepo() *MysqlRepo {
 	// 生成数据库
-	initDb()
+	CreateDB(configs.Default.Db.Database)
 
 	// 创建连接
 	config := mysql.Config{
@@ -40,7 +40,7 @@ func NewMysqlRepo() *MysqlRepo {
 	db.LogMode(configs.Default.App.Debug)
 	return &MysqlRepo{db}
 }
-func initDb() {
+func DestroyDB(name string) error {
 	config := mysql.Config{User: configs.Default.Db.Username, Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host, AllowNativePasswords: true, ParseTime: true}
 	if configs.Default.Db.Port != "" {
 		config.Addr = fmt.Sprintf("%s:%s", configs.Default.Db.Host, configs.Default.Db.Port)
@@ -50,11 +50,23 @@ func initDb() {
 	if err != nil {
 		glog.Errorf("orm failed to initialized: %v", err)
 	}
-	db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s COLLATE %s;", configs.Default.Db.Database, configs.Default.Db.Charset, configs.Default.Db.Collation))
+	defer db.Close()
+	return db.Exec(fmt.Sprintf("Drop Database if exists %s;", name)).Error
+}
+func CreateDB(name string) {
+	config := mysql.Config{User: configs.Default.Db.Username, Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host, AllowNativePasswords: true, ParseTime: true}
+	if configs.Default.Db.Port != "" {
+		config.Addr = fmt.Sprintf("%s:%s", configs.Default.Db.Host, configs.Default.Db.Port)
+	}
+	str := config.FormatDSN()
+	db, err := gorm.Open("mysql", str)
+	if err != nil {
+		glog.Errorf("orm failed to initialized: %v", err)
+	}
+	db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s COLLATE %s;", name, configs.Default.Db.Charset, configs.Default.Db.Collation))
 
 	defer db.Close()
 }
-
 func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	if len(objArr) == 0 {
 		return nil

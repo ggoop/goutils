@@ -13,7 +13,7 @@ type Time struct {
 }
 
 const (
-	Layout_YYYMMDD        = "2006-01-02"
+	Layout_YYYYMMDD       = "2006-01-02"
 	Layout_YYYYMMDDHHIISS = "2006-01-02 15:04:05"
 )
 
@@ -31,8 +31,8 @@ func CreateTime(value interface{}) Time {
 		data := []rune(v)
 		if len(data) > len(Layout_YYYYMMDDHHIISS) {
 			data = data[:len(Layout_YYYYMMDDHHIISS)]
-		} else if len(data) > len(Layout_YYYMMDD) {
-			data = data[:len(Layout_YYYMMDD)]
+		} else if len(data) > len(Layout_YYYYMMDD) {
+			data = data[:len(Layout_YYYYMMDD)]
 		}
 		now, _ := time.ParseInLocation("2006-01-02", string(data), time.Local)
 		return Time{now}
@@ -53,8 +53,8 @@ func (t *Time) UnmarshalJSON(data []byte) (err error) {
 	data = []byte(strings.Replace(string(data), `"`, "", -1))
 	if len(data) > len(Layout_YYYYMMDDHHIISS) {
 		data = data[:len(Layout_YYYYMMDDHHIISS)]
-	} else if len(data) > len(Layout_YYYMMDD) {
-		data = data[:len(Layout_YYYMMDD)]
+	} else if len(data) > len(Layout_YYYYMMDD) {
+		data = data[:len(Layout_YYYYMMDD)]
 	}
 	now, err := time.ParseInLocation("2006-01-02", string(data), time.Local)
 	if now.UnixNano() < 0 || now.Unix() <= 0 {
