@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ggoop/goutils/utils"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/mvc"
 )
@@ -38,7 +39,9 @@ func ToSingle(data interface{}) Result {
 func ToError(err interface{}, code ...int) Result {
 	res := mvc.Response{}
 	obj := iris.Map{}
-	if ev, ok := err.(error); ok {
+	if ev, ok := err.(utils.GError); ok {
+		obj["msg"] = ev.Error()
+	} else if ev, ok := err.(error); ok {
 		obj["msg"] = ev.Error()
 	} else {
 		obj["msg"] = err

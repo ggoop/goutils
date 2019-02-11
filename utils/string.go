@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -31,10 +32,10 @@ func NewString(s string) *String {
 func NewStringBype(c []byte) *String {
 	n := -1
 	for i, b := range c {
-			if b == 0 {
-					break
-			}
-			n = i
+		if b == 0 {
+			break
+		}
+		n = i
 	}
 	return NewString(string(c[:n+1]))
 }
@@ -275,4 +276,40 @@ func FirstCaseToUpper(str string, first bool) string {
 */
 func ArrayToString(arrays []string) string {
 	return strings.Join(arrays, "")
+}
+func StringIsAlphanumeric(str string) bool {
+	if ok, _ := regexp.MatchString(`^[a-zA-Z0-9]+$`, str); ok {
+		return ok
+	}
+	return false
+}
+func StringIsNumeric(str string) bool {
+	if ok, _ := regexp.MatchString(`^[0-9]+$`, str); ok {
+		return ok
+	}
+	return false
+}
+func StringIsURL(str string) bool {
+	if ok, _ := regexp.MatchString(`^((https?):\/\/)+[^\s]+`, str); ok {
+		return ok
+	}
+	return false
+}
+func StringIsEmail(str string) bool {
+	if ok, _ := regexp.MatchString(`\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*`, str); ok {
+		return ok
+	}
+	return false
+}
+func StringIsCode(str string) bool {
+	if ok, _ := regexp.MatchString(`^[a-zA-Z0-9_\/\.-]{1,50}$`, str); ok {
+		return ok
+	}
+	return false
+}
+func StringIsMobile(str string) bool {
+	if ok, _ := regexp.MatchString(`^(\\+\\d{2}-)?(\\d{2,3}-)?([1][3,4,5,7,8][0-9]\\d{8})$`, str); ok {
+		return ok
+	}
+	return false
 }
