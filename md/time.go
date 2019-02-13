@@ -13,6 +13,7 @@ type Time struct {
 }
 
 const (
+	Layout_YYYYMM         = "2006-01"
 	Layout_YYYYMMDD       = "2006-01-02"
 	Layout_YYYYMMDDHHIISS = "2006-01-02 15:04:05"
 )
