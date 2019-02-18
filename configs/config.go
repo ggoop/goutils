@@ -1,7 +1,6 @@
 package configs
 
 import (
-	"os"
 	"strings"
 
 	"github.com/ggoop/goutils/glog"
@@ -68,7 +67,6 @@ func New() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
-		os.Exit(1)
 	}
 	viper.Unmarshal(&Default)
 	if Default.App.Port == "" {
