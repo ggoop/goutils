@@ -1,6 +1,7 @@
 package md
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -177,4 +178,53 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	}
 	//表迁移
 	db.AutoMigrate(values...)
+}
+
+func QuotedBy(m MD, ids []string) ([]MDEntity, []string) {
+	if m == nil || ids == nil || len(ids) == 0 {
+		return nil, nil
+	}
+	var repo *repositories.MysqlRepo
+	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
+		repo = db
+	}); err != nil {
+		glog.Errorf("di Provide error:%s", err)
+		return nil, nil
+	}
+
+	items := make([]MDField, 0)
+	query := repo.Table(fmt.Sprintf("%v as f", repo.NewScope(MDField{}).TableName()))
+	query = query.Joins(fmt.Sprintf("inner join %v as e on e.id=f.entity_id", repo.NewScope(MDEntity{}).TableName()))
+	query = query.Select("f.*")
+	query.Where("f.type_id=? and f.type_type=? and f.kind=?", m.MD().ID, "entity", "belongs_to").Find(&items)
+	if len(items) > 0 {
+		rtns := make([]MDEntity, 0)
+		count := 0
+		for _, d := range items {
+			entity := GetEntity(d.EntityID)
+			if entity == nil || entity.TableName == "" {
+				continue
+			}
+			if d.Kind == "belongs_to" {
+				field := entity.GetField(d.ForeignKey)
+				if field == nil {
+					continue
+				}
+				repo.Table(fmt.Sprintf("%v as t", entity.TableName)).Where(fmt.Sprintf("%v in (?)", field.DBName), ids).Count(&count)
+				if count > 0 {
+					item := MDEntity{TypeID: entity.TypeID, Code: entity.Code, Name: entity.Name, FullName: entity.FullName, TableName: entity.TableName}
+					item.ID = entity.ID
+					rtns = append(rtns, item)
+				}
+			}
+		}
+		if len(rtns) > 0 {
+			s := make([]string, 0)
+			for _, item := range rtns {
+				s = append(s, item.Name)
+			}
+			return rtns, s
+		}
+	}
+	return nil, nil
 }
