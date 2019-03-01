@@ -25,6 +25,9 @@ func NewTimePtr() *Time {
 	return CreateTimePtr(time.Now())
 }
 func CreateTime(value interface{}) Time {
+	if value == nil {
+		return Time{}
+	}
 	if v, ok := value.(time.Time); ok {
 		return Time{v}
 	}
@@ -50,21 +53,25 @@ func (t Time) MarshalJSON() ([]byte, error) {
 	formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
 	return []byte(formatted), nil
 }
-func (t *Time) UnmarshalJSON(data []byte) (err error) {
+func (t *Time) UnmarshalJSON(data []byte) error {
+	if data == nil || len(data) == 0 {
+		*t = Time{}
+		return nil
+	}
 	data = []byte(strings.Replace(string(data), `"`, "", -1))
 	if len(data) > len(Layout_YYYYMMDDHHIISS) {
 		data = data[:len(Layout_YYYYMMDDHHIISS)]
 	} else if len(data) > len(Layout_YYYYMMDD) {
 		data = data[:len(Layout_YYYYMMDD)]
 	}
-	now, err := time.ParseInLocation("2006-01-02", string(data), time.Local)
+	now, _ := time.ParseInLocation("2006-01-02", string(data), time.Local)
 	if now.UnixNano() < 0 || now.Unix() <= 0 {
 		*t = Time{}
 	} else {
 		*t = Time{now}
 	}
 
-	return
+	return nil
 }
 
 // Value insert timestamp into mysql need this function.
