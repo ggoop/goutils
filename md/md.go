@@ -180,7 +180,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	db.AutoMigrate(values...)
 }
 
-func QuotedBy(m MD, ids []string) ([]MDEntity, []string) {
+func QuotedBy(m MD, ids []string, excludes ...MD) ([]MDEntity, []string) {
 	if m == nil || ids == nil || len(ids) == 0 {
 		return nil, nil
 	}
@@ -192,10 +192,20 @@ func QuotedBy(m MD, ids []string) ([]MDEntity, []string) {
 		return nil, nil
 	}
 
+	excludeIds := make([]string, 0)
+	if excludes != nil && len(excludes) > 0 {
+		for _, e := range excludes {
+			excludeIds = append(excludeIds, e.MD().ID)
+		}
+	}
+
 	items := make([]MDField, 0)
 	query := repo.Table(fmt.Sprintf("%v as f", repo.NewScope(MDField{}).TableName()))
 	query = query.Joins(fmt.Sprintf("inner join %v as e on e.id=f.entity_id", repo.NewScope(MDEntity{}).TableName()))
 	query = query.Select("f.*")
+	if len(excludeIds) > 0 {
+		query = query.Where("f.entity_id not in (?)", excludeIds)
+	}
 	query.Where("f.type_id=? and f.type_type=? and f.kind=?", m.MD().ID, "entity", "belongs_to").Find(&items)
 	if len(items) > 0 {
 		rtns := make([]MDEntity, 0)
