@@ -1,6 +1,7 @@
 package query
 
 import (
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
 	"github.com/jinzhu/gorm"
+	"github.com/shopspring/decimal"
 )
 
 type IExector interface {
@@ -137,19 +139,23 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 			dbType := columnTypeMap[column]
 			switch dbType {
 			case "VARCHAR", "TEXT", "NVARCHAR":
-				var ignored string
+				var ignored sql.NullString
 				values[index] = &ignored
 				break
 			case "BOOL":
-				var ignored bool
+				var ignored sql.NullBool
 				values[index] = &ignored
 				break
 			case "INT", "BIGINT":
-				var ignored int
+				var ignored sql.NullInt64
 				values[index] = &ignored
 				break
 			case "DECIMAL":
-				var ignored float64
+				var ignored decimal.Decimal
+				values[index] = &ignored
+				break
+			case "TIMESTAMP":
+				var ignored md.Time
 				values[index] = &ignored
 				break
 			default:
@@ -157,10 +163,22 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				values[index] = &ignored
 			}
 		}
-		rows.Scan(values...)
+		if err := rows.Scan(values...); err != nil {
+			glog.Error(err)
+		}
 		resultItem := make(map[string]interface{})
 		for index, column := range columns {
-			resultItem[column] = values[index]
+			if v, ok := values[index].(*sql.NullString); ok {
+				resultItem[column] = v.String
+			} else if v, ok := values[index].(*sql.NullBool); ok {
+				resultItem[column] = *v
+			} else if v, ok := values[index].(*sql.NullInt64); ok {
+				resultItem[column] = *v
+			} else if v, ok := values[index].(*decimal.Decimal); ok {
+				resultItem[column] = *v
+			} else if v, ok := values[index].(*md.Time); ok && !v.IsZero() {
+				resultItem[column] = v.Format(md.Layout_YYYYMMDDHHIISS)
+			}
 		}
 		results = append(results, resultItem)
 	}

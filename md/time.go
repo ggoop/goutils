@@ -50,6 +50,9 @@ func CreateTimePtr(value interface{}) *Time {
 
 // MarshalJSON on JSONTime format Time field with %Y-%m-%d %H:%M:%S
 func (t Time) MarshalJSON() ([]byte, error) {
+	if t.UnixNano() <= 0 || t.Unix() <= 0 || t.IsZero() {
+		return []byte("null"), nil
+	}
 	formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
 	return []byte(formatted), nil
 }
@@ -85,6 +88,10 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof time.Time
 func (t *Time) Scan(v interface{}) error {
+	if v == nil {
+		*t = Time{}
+		return nil
+	}
 	value, ok := v.(time.Time)
 	if ok {
 		*t = Time{Time: value}

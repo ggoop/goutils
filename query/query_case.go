@@ -12,20 +12,21 @@ import (
 
 type QueryCase struct {
 	md.ModelUnscoped
-	EntID     string                 `gorm:"size:100" json:"ent_id"`
-	UserID    string                 `gorm:"size:100" json:"user_id"`
-	QueryID   string                 `gorm:"name:查询ID" json:"case_id"`
-	Query     *Query                 `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;name:查询" json:"query"`
-	Name      string                 `gorm:"name:名称" json:"name"`
-	ScopeID   string                 `gorm:"size:100;name:范围ID" json:"scope_id"`
-	ScopeType string                 `gorm:"size:100;name:范围类型" json:"scope_type"`
-	Memo      string                 `gorm:"name:备注" json:"memo"`
-	Page      int                    `gorm:"name:页码" json:"page"`
-	PageSize  int                    `gorm:"name:每页显示记录数" json:"page_size"`
-	Columns   []QueryColumn          `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
-	Orders    []QueryOrder           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
-	Wheres    []QueryWhere           `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
-	Context   map[string]interface{} `gorm:"-" json:"context"` //上下文参数
+	EntID       string        `gorm:"size:50" json:"ent_id"`
+	UserID      string        `gorm:"size:50" json:"user_id"`
+	QueryID     string        `gorm:"size:50;name:查询" json:"query_id"`
+	Query       *Query        `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;name:查询" json:"query"`
+	Name        string        `gorm:"name:名称" json:"name"`
+	ScopeID     string        `gorm:"size:50;name:范围ID" json:"scope_id"`
+	ScopeType   string        `gorm:"size:50;name:范围类型" json:"scope_type"`
+	Memo        string        `gorm:"name:备注" json:"memo"`
+	Page        int           `gorm:"name:页码" json:"page"`
+	PageSize    int           `gorm:"name:每页显示记录数" json:"page_size"`
+	Columns     []QueryColumn `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
+	Orders      []QueryOrder  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
+	Wheres      []QueryWhere  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
+	ContextJson string        `gorm:"name:上下文" json:"context_json"` //上下文参数
+	Export      bool          `gorm:"name:是否导出" json:"export"`
 }
 
 func (s *QueryCase) MD() *md.Mder {
@@ -104,13 +105,18 @@ func (s *QueryCase) GetExector() IExector {
 			}
 		}
 	}
-	for _, v := range s.Orders {
-		if v.Order != "" {
-			exector.Order(v.Field + " " + v.Order)
-		} else {
-			exector.Order(v.Field)
+	if len(s.Orders) > 0 {
+		for _, v := range s.Orders {
+			if v.Order != "" {
+				exector.Order(v.Field + " " + v.Order)
+			} else {
+				exector.Order(v.Field)
+			}
 		}
+	} else {
+		exector.Order("ID")
 	}
+
 	return exector
 }
 func (s *QueryCase) addSubItemToIWhere(iw IQWhere, subValue QueryWhere) {
