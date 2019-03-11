@@ -1,6 +1,8 @@
 package configs
 
 import (
+	"io"
+	"os"
 	"strings"
 
 	"github.com/ggoop/goutils/glog"
@@ -59,6 +61,20 @@ func init() {
 	New()
 }
 func New() {
+	appFile := utils.JoinCurrentPath("env/app.yaml")
+	//不存在时，自动由dev创建
+	if !utils.PathExists(appFile) {
+		devFile := utils.JoinCurrentPath("env/app.yaml.dev")
+		if utils.PathExists(devFile) {
+			if s, err := os.Open(devFile); err == nil {
+				defer s.Close()
+				if newEnv, err := os.Create(appFile); err == nil {
+					defer newEnv.Close()
+					io.Copy(newEnv, s)
+				}
+			}
+		}
+	}
 	Default = &Config{}
 	viper.SetConfigType("yaml")
 
