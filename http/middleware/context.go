@@ -39,11 +39,13 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 	)
 	if IsJWTContext(ctx) {
 		if uc, err = m.CheckJWT(ctx); err != nil {
+			ctx.StatusCode(401)
 			ctx.StopExecution()
 			return
 		}
 	} else {
 		if uc, err = m.CheckSession(ctx); err != nil {
+			ctx.StatusCode(401)
 			ctx.StopExecution()
 			return
 		}
