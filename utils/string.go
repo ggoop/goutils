@@ -308,7 +308,8 @@ func StringIsCode(str string) bool {
 	return false
 }
 func StringIsMobile(str string) bool {
-	if ok, _ := regexp.MatchString(`^(\\+\\d{2}-)?(\\d{2,3}-)?([1][3,4,5,7,8][0-9]\\d{8})$`, str); ok {
+	//^(\\+\\d{2}-)?(\\d{2,3}-)?([1][3,4,5,7,8][0-9])\d{8}$
+	if ok, _ := regexp.MatchString(`^(\\+\\d{2}-)?(\\d{2,3}-)?([1][3,4,5,7,8][0-9])\d{8}$`, str); ok {
 		return ok
 	}
 	return false
