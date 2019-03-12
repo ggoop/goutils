@@ -1,14 +1,21 @@
 package context
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/ggoop/goutils/configs"
+	"github.com/ggoop/goutils/utils"
 
 	"github.com/dgrijalva/jwt-go"
 )
+
+func New() Context {
+	return Context{data: make(map[string]string)}
+}
 
 type Context struct {
 	data map[string]string
@@ -26,8 +33,7 @@ const (
 )
 
 func (s *Context) Copy() *Context {
-	c := Context{}
-	c.data = make(map[string]string)
+	c := New()
 	if s.data != nil {
 		for k, v := range s.data {
 			c.data[k] = v
@@ -105,7 +111,8 @@ func (s *Context) GetValue(name string) string {
 		s.data = make(map[string]string)
 		return ""
 	}
-	return s.data[strings.ToLower(name)]
+	name = utils.SnakeString(name)
+	return s.data[name]
 }
 func (s *Context) GetIntValue(name string) int {
 	v, _ := strconv.Atoi(s.GetValue(name))
@@ -119,7 +126,7 @@ func (s *Context) SetValue(name, value string) *Context {
 	if s.data == nil {
 		s.data = make(map[string]string)
 	}
-	name = strings.ToLower(name)
+	name = utils.SnakeString(name)
 	if name == "ent_id" {
 		s.data[name] = value
 	} else if name == "user_id" {
@@ -143,7 +150,7 @@ func (s *Context) ToTokenString() string {
 	return "bearer " + tokenString
 }
 func (s *Context) FromTokenString(token string) (*Context, error) {
-	ctx := Context{}
+	ctx := New()
 	tokenParts := strings.Split(token, " ")
 	if len(tokenParts) == 2 && strings.ToLower(tokenParts[0]) == "bearer" {
 		token = tokenParts[1]
@@ -162,4 +169,60 @@ func (s *Context) FromTokenString(token string) (*Context, error) {
 		}
 	}
 	return &ctx, nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (d *Context) UnmarshalJSON(bytes []byte) error {
+	if string(bytes) == "null" || string(bytes) == "" {
+		return nil
+	}
+	data := make(map[string]string)
+	json.Unmarshal(bytes, &data)
+	nc := Context{data: data}
+	*d = nc
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d Context) MarshalJSON() ([]byte, error) {
+	if d.data == nil || len(d.data) == 0 {
+		return []byte(""), nil
+	}
+	bytes, err := json.Marshal(d.data)
+	return bytes, err
+}
+
+// Scan implements the sql.Scanner interface for database deserialization.
+func (d *Context) Scan(value interface{}) error {
+	if value == nil {
+		*d = New()
+		return nil
+	}
+	switch v := value.(type) {
+	case float32:
+		*d = New()
+		return nil
+
+	case float64:
+		*d = New()
+		return nil
+
+	case int64:
+		*d = New()
+		return nil
+	case string:
+		nd := New()
+		json.Unmarshal([]byte(v), &nd)
+		*d = nd
+		return nil
+	default:
+		*d = New()
+		return nil
+	}
+}
+
+// Value implements the driver.Valuer interface for database serialization.
+func (d Context) Value() (driver.Value, error) {
+	data, err := d.MarshalJSON()
+	return string(data), err
 }

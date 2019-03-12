@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -269,6 +270,76 @@ func FirstCaseToUpper(str string, first bool) string {
 	} else {
 		return temp[0] + upperStr
 	}
+}
+
+// snake string, XxYy to xx_yy , XxYY to xx_yy
+func SnakeString(name string) string {
+	const (
+		lower = false
+		upper = true
+	)
+	if name == "" {
+		return ""
+	}
+	var (
+		value                                    = name
+		buf                                      = bytes.NewBufferString("")
+		lastCase, currCase, nextCase, nextNumber bool
+	)
+
+	for i, v := range value[:len(value)-1] {
+		nextCase = bool(value[i+1] >= 'A' && value[i+1] <= 'Z')
+		nextNumber = bool(value[i+1] >= '0' && value[i+1] <= '9')
+		if i > 0 {
+			if currCase == upper {
+				if lastCase == upper && (nextCase == upper || nextNumber == upper) {
+					buf.WriteRune(v)
+				} else {
+					if value[i-1] != '_' && value[i+1] != '_' {
+						buf.WriteRune('_')
+					}
+					buf.WriteRune(v)
+				}
+			} else {
+				buf.WriteRune(v)
+				if i == len(value)-2 && (nextCase == upper && nextNumber == lower) {
+					buf.WriteRune('_')
+				}
+			}
+		} else {
+			currCase = upper
+			buf.WriteRune(v)
+		}
+		lastCase = currCase
+		currCase = nextCase
+	}
+	buf.WriteByte(value[len(value)-1])
+	return strings.ToLower(buf.String())
+}
+
+// camel string, xx_yy to XxYy
+func CamelString(s string) string {
+	data := make([]byte, 0, len(s))
+	j := false
+	k := false
+	num := len(s) - 1
+	for i := 0; i <= num; i++ {
+		d := s[i]
+		if k == false && d >= 'A' && d <= 'Z' {
+			k = true
+		}
+		if d >= 'a' && d <= 'z' && (j || k == false) {
+			d = d - 32
+			j = false
+			k = true
+		}
+		if k && d == '_' && num > i && s[i+1] >= 'a' && s[i+1] <= 'z' {
+			j = true
+			continue
+		}
+		data = append(data, d)
+	}
+	return string(data[:])
 }
 
 /*
