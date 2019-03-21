@@ -67,6 +67,12 @@ func CreateDB(name string) {
 
 	defer db.Close()
 }
+
+// Begin begin a transaction
+func (s *MysqlRepo) Begin() *MysqlRepo {
+	return &MysqlRepo{s.DB.Begin()}
+}
+
 func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	if len(objArr) == 0 {
 		return nil
