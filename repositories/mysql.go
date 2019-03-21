@@ -73,6 +73,10 @@ func (s *MysqlRepo) Begin() *MysqlRepo {
 	return &MysqlRepo{s.DB.Begin()}
 }
 
+// New clone a new db connection without search conditions
+func (s *MysqlRepo) New() *MysqlRepo {
+	return &MysqlRepo{s.DB.New()}
+}
 func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	if len(objArr) == 0 {
 		return nil
