@@ -299,14 +299,16 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 // Error will print only when logger's Level is error, warn, info or debug.
-func (l *Logger) Error(v ...interface{}) {
+func (l *Logger) Error(v ...interface{}) error {
 	l.Log(ErrorLevel, v...)
+	return fmt.Errorf(fmt.Sprint(v...))
 }
 
 // Errorf will print only when logger's Level is error, warn, info or debug.
-func (l *Logger) Errorf(format string, args ...interface{}) {
+func (l *Logger) Errorf(format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
 	l.Error(msg)
+	return fmt.Errorf(msg)
 }
 
 // Warn will print when logger's Level is warn, info or debug.

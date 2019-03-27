@@ -105,13 +105,13 @@ func Fatalf(format string, args ...interface{}) {
 }
 
 // Error will print only when logger's Level is error, warn, info or debug.
-func Error(v ...interface{}) {
-	Default.Error(v...)
+func Error(v ...interface{}) error {
+	return Default.Error(v...)
 }
 
 // Errorf will print only when logger's Level is error, warn, info or debug.
-func Errorf(format string, args ...interface{}) {
-	Default.Errorf(format, args...)
+func Errorf(format string, args ...interface{}) error {
+	return Default.Errorf(format, args...)
 }
 
 // Warn will print when logger's Level is warn, info or debug.
