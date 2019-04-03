@@ -50,13 +50,14 @@ type Logger struct {
 // New returns a new golog with a default output to `os.Stdout`
 // and level to `InfoLevel`.
 func New() *Logger {
-	return &Logger{
+	ll := Logger{
 		Level:      InfoLevel,
 		TimeFormat: "2006/01/02 15:04",
 		NewLine:    true,
 		Printer:    pio.NewPrinter("", os.Stdout).EnableDirectOutput().Hijack(logHijacker),
 		children:   newLoggerMap(),
 	}
+	return &ll
 }
 
 // acquireLog returns a new log fom the pool.
@@ -133,7 +134,7 @@ func createPath(path string) error {
 	}
 	return err
 }
-func (l *Logger) SetLogFile(key, logDir string) {
+func (l *Logger) AddLogFile(key, logDir string) {
 	if err := createPath(logDir); err != nil {
 		panic(err)
 	}

@@ -27,6 +27,7 @@ func New() context.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				if ctx.IsStopped() {
+					glog.Error(err)
 					return
 				}
 

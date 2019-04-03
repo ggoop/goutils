@@ -116,12 +116,15 @@ func getInstance(key string) *Logger {
 		defer mu.Unlock()
 		if !mapKeys[key] {
 			newLog := New()
-			newLog.SetLogFile(key, logDir)
+			newLog.AddLogFile(key, logDir)
 			mapKeys[key] = true
 			mapValues[key] = newLog
 		}
 	}
 	return mapValues[key]
+}
+func AddLogFile(dir string) {
+	Default.AddLogFile("", dir)
 }
 func SetPath(path string) {
 	logDir = path
