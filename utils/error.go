@@ -8,12 +8,17 @@ import (
 // err : error ,
 // code :x xx xxx xxxx,level-product-app-number 10bit
 type GError struct {
-	Err  error
-	Code int
+	Err    error
+	Code   int
+	Format string
 }
 
 func (e GError) Error() string {
-	return fmt.Sprintf("%s [%d]", e.Err.Error(), e.Code)
+	if e.Format != "" {
+		return fmt.Sprintf(e.Format, e.Err.Error(), e.Code)
+	} else {
+		return fmt.Sprintf("%s", e.Err.Error())
+	}
 }
 
 // err : error ,
