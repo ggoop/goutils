@@ -32,13 +32,19 @@ func CreateTime(value interface{}) Time {
 		return Time{v}
 	}
 	if v, ok := value.(string); ok {
+		layout := Layout_YYYYMMDDHHIISS
 		data := []rune(v)
-		if len(data) > len(Layout_YYYYMMDDHHIISS) {
+		if len(data) >= len(Layout_YYYYMMDDHHIISS) {
+			layout = Layout_YYYYMMDDHHIISS
 			data = data[:len(Layout_YYYYMMDDHHIISS)]
-		} else if len(data) > len(Layout_YYYYMMDD) {
+		} else if len(data) >= len(Layout_YYYYMMDD) {
+			layout = Layout_YYYYMMDD
 			data = data[:len(Layout_YYYYMMDD)]
+		} else if len(data) >= len(Layout_YYYYMM) {
+			layout = Layout_YYYYMM
+			data = data[:len(Layout_YYYYMM)]
 		}
-		now, _ := time.ParseInLocation("2006-01-02", string(data), time.Local)
+		now, _ := time.ParseInLocation(layout, string(data), time.Local)
 		return Time{now}
 	}
 	return Time{time.Now()}
@@ -61,13 +67,19 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		*t = Time{}
 		return nil
 	}
+	layout := Layout_YYYYMMDDHHIISS
 	data = []byte(strings.Replace(string(data), `"`, "", -1))
-	if len(data) > len(Layout_YYYYMMDDHHIISS) {
+	if len(data) >= len(Layout_YYYYMMDDHHIISS) {
+		layout = Layout_YYYYMMDDHHIISS
 		data = data[:len(Layout_YYYYMMDDHHIISS)]
-	} else if len(data) > len(Layout_YYYYMMDD) {
+	} else if len(data) >= len(Layout_YYYYMMDD) {
+		layout = Layout_YYYYMMDD
 		data = data[:len(Layout_YYYYMMDD)]
+	} else if len(data) >= len(Layout_YYYYMM) {
+		layout = Layout_YYYYMM
+		data = data[:len(Layout_YYYYMM)]
 	}
-	now, _ := time.ParseInLocation("2006-01-02", string(data), time.Local)
+	now, _ := time.ParseInLocation(layout, string(data), time.Local)
 	if now.UnixNano() < 0 || now.Unix() <= 0 {
 		*t = Time{}
 	} else {
