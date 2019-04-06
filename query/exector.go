@@ -323,8 +323,8 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 			}
 			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName, condition), args...)
 		} else if relationship.Field.Kind == "has_many" {
-			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
-			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+			fkey := t.Entity.GetField(relationship.Field.ForeignKey)
+			lkey := relationship.Entity.Entity.GetField(relationship.Field.AssociationKey)
 			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
 		}
 	}
