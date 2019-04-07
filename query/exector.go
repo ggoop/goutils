@@ -146,7 +146,7 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				var ignored sql.NullBool
 				values[index] = &ignored
 				break
-			case "INT", "BIGINT":
+			case "INT", "BIGINT", "TINYINT":
 				var ignored sql.NullInt64
 				values[index] = &ignored
 				break
@@ -171,13 +171,15 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 			if v, ok := values[index].(*sql.NullString); ok {
 				resultItem[column] = v.String
 			} else if v, ok := values[index].(*sql.NullBool); ok {
-				resultItem[column] = *v
+				resultItem[column] = v.Bool
 			} else if v, ok := values[index].(*sql.NullInt64); ok {
-				resultItem[column] = *v
+				resultItem[column] = v.Int64
 			} else if v, ok := values[index].(*decimal.Decimal); ok {
 				resultItem[column] = *v
 			} else if v, ok := values[index].(*md.Time); ok && !v.IsZero() {
 				resultItem[column] = v.Format(md.Layout_YYYYMMDDHHIISS)
+			} else {
+				resultItem[column] = *v
 			}
 		}
 		results = append(results, resultItem)

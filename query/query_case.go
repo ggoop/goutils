@@ -138,6 +138,12 @@ func (s *QueryCase) queryWhereToIWhere(value QueryWhere) IQWhere {
 	if value.Field != "" && value.Value != "" && value.Operator == "contains" {
 		item.Query = fmt.Sprintf("%v like ?", value.Field)
 		item.Args = []interface{}{"%" + value.Value + "%"}
+	} else if value.Field != "" && value.Value != "" && value.Operator == "like" {
+		item.Query = fmt.Sprintf("%v like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value + "%"}
+	} else if value.Field != "" && value.Value != "" && value.Operator == "not like" {
+		item.Query = fmt.Sprintf("%v not like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value + "%"}
 	} else if value.Field != "" && value.Value != "" && (value.Operator == "in" || value.Operator == "not in") {
 		item.Query = fmt.Sprintf("%v %s (?)", value.Field, value.Operator)
 		item.Args = []interface{}{value.Value}
