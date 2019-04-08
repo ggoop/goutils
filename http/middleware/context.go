@@ -53,11 +53,8 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 	if uc == nil {
 		uc = &context.Context{}
 	}
-	if uc.EntID() == "" {
-		entID := ctx.GetHeader("ENT")
-		if entID != "" {
-			uc.SetEntID(entID)
-		}
+	if entID := ctx.GetHeader("ENT"); entID != "" && len(entID) > 5 {
+		uc.SetEntID(entID)
 	}
 	ctx.Values().Set(context.DefaultContextKey, uc)
 	if ctx.IsAjax() {
