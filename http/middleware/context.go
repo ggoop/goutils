@@ -53,7 +53,7 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 	if uc == nil {
 		uc = &context.Context{}
 	}
-	if entID := ctx.GetHeader("ENT"); entID != "" && len(entID) > 5 {
+	if entID := ctx.GetHeader("Ent"); entID != "" && len(entID) > 5 {
 		uc.SetEntID(entID)
 	}
 	ctx.Values().Set(context.DefaultContextKey, uc)
