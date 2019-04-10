@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/ggoop/goutils/glog"
 )
 
 // JSONTime format json time field by myself
@@ -13,9 +15,10 @@ type Time struct {
 }
 
 const (
-	Layout_YYYYMM         = "2006-01"
-	Layout_YYYYMMDD       = "2006-01-02"
-	Layout_YYYYMMDDHHIISS = "2006-01-02 15:04:05"
+	Layout_YYYYMM          = "2006-01"
+	Layout_YYYYMMDD        = "2006-01-02"
+	Layout_YYYYMMDDHHIISS  = "2006-01-02 15:04:05"
+	Layout_YYYYMMDDHHIISST = "2006-01-02T15:04:05"
 )
 
 func NewTime() Time {
@@ -34,7 +37,10 @@ func CreateTime(value interface{}) Time {
 	if v, ok := value.(string); ok {
 		layout := Layout_YYYYMMDDHHIISS
 		data := []rune(v)
-		if len(data) >= len(Layout_YYYYMMDDHHIISS) {
+		if len(data) >= len(Layout_YYYYMMDDHHIISST) && strings.Contains(v, "T") {
+			layout = Layout_YYYYMMDDHHIISST
+			data = data[:len(Layout_YYYYMMDDHHIISST)]
+		} else if len(data) >= len(Layout_YYYYMMDDHHIISS) {
 			layout = Layout_YYYYMMDDHHIISS
 			data = data[:len(Layout_YYYYMMDDHHIISS)]
 		} else if len(data) >= len(Layout_YYYYMMDD) {
@@ -44,7 +50,10 @@ func CreateTime(value interface{}) Time {
 			layout = Layout_YYYYMM
 			data = data[:len(Layout_YYYYMM)]
 		}
-		now, _ := time.ParseInLocation(layout, string(data), time.Local)
+		now, err := time.ParseInLocation(layout, string(data), time.Local)
+		if err != nil {
+			glog.Error(err)
+		}
 		return Time{now}
 	}
 	return Time{time.Now()}
@@ -67,9 +76,13 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		*t = Time{}
 		return nil
 	}
+	ds := strings.Replace(string(data), `"`, "", -1)
 	layout := Layout_YYYYMMDDHHIISS
-	data = []byte(strings.Replace(string(data), `"`, "", -1))
-	if len(data) >= len(Layout_YYYYMMDDHHIISS) {
+	data = []byte(ds)
+	if len(data) >= len(Layout_YYYYMMDDHHIISST) && strings.Contains(ds, "T") {
+		layout = Layout_YYYYMMDDHHIISST
+		data = data[:len(Layout_YYYYMMDDHHIISST)]
+	} else if len(data) >= len(Layout_YYYYMMDDHHIISS) {
 		layout = Layout_YYYYMMDDHHIISS
 		data = data[:len(Layout_YYYYMMDDHHIISS)]
 	} else if len(data) >= len(Layout_YYYYMMDD) {
