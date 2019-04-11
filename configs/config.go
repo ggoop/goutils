@@ -1,9 +1,14 @@
 package configs
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
+
+	"github.com/ggoop/goutils/gcast"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/utils"
@@ -39,18 +44,82 @@ type Config struct {
 	App  AppConfig
 	Db   DbConfig
 	Log  LogConfig
-	data map[string]string
+	data map[string]interface{}
 }
 
+func reflectTarget(r reflect.Value) reflect.Value {
+	for reflect.Ptr == r.Kind() || reflect.Interface == r.Kind() {
+		r = r.Elem()
+	}
+	return r
+}
 func (s *Config) GetValue(name string) string {
-	if s.data == nil {
+	v := s.GetObject(name)
+	if v == nil {
 		return ""
 	}
-	return s.data[strings.ToLower(name)]
+	switch s := v.(type) {
+	case string:
+		return s
+	case []byte:
+		return string(s)
+	}
+	refV := reflectTarget(reflect.ValueOf(v))
+	if !refV.IsValid() {
+		return ""
+	}
+	switch refV.Kind() {
+	case reflect.String:
+		return refV.String()
+	case reflect.Bool:
+		if refV.Bool() {
+			return "true"
+		} else {
+			return "false"
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", refV.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return fmt.Sprintf("%d", refV.Uint())
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", refV.Float())
+	}
+	return ""
 }
-func (s *Config) SetValue(name, value string) *Config {
+func (s *Config) UnmarshalValue(name string, rawVal interface{}) error {
+	ov := s.GetObject(name)
+	if ov == nil {
+		return nil
+	}
+	if b, err := json.Marshal(ov); err != nil {
+		return err
+	} else {
+		if err := json.Unmarshal(b, rawVal); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Config) GetBool(name string) bool {
+	ov := s.GetObject(name)
+	if ov == nil {
+		return false
+	}
+	return gcast.ToBool(ov)
+}
+func (s *Config) GetObject(name string) interface{} {
 	if s.data == nil {
-		s.data = make(map[string]string)
+		return nil
+	}
+	if v, ok := s.data[strings.ToLower(name)]; ok {
+		return v
+	}
+	return nil
+}
+func (s *Config) SetValue(name string, value interface{}) *Config {
+	if s.data == nil {
+		s.data = make(map[string]interface{})
 	}
 	s.data[strings.ToLower(name)] = value
 	return s
@@ -81,11 +150,12 @@ func New() {
 
 	viper.SetConfigName(appConfigName)
 	viper.AddConfigPath(utils.JoinCurrentPath("env"))
-	err := viper.ReadInConfig()
-	if err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
 	}
-	viper.Unmarshal(&Default)
+	if err := viper.Unmarshal(&Default); err != nil {
+		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
+	}
 	if Default.App.Port == "" {
 		Default.App.Port = "8080"
 	}
@@ -110,10 +180,15 @@ func New() {
 	if Default.Db.Collation == "" {
 		Default.Db.Collation = "utf8mb4_general_ci"
 	}
-	kvs := make(map[string]string)
-	viper.Unmarshal(&kvs)
+	kvs := make(map[string]interface{})
+	if err := viper.Unmarshal(&kvs); err != nil {
+		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
+	}
 	if len(kvs) > 0 {
 		for k, v := range kvs {
+			if k == "app" || k == "db" || k == "log" {
+				continue
+			}
 			Default.SetValue(k, v)
 		}
 	}

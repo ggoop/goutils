@@ -15,3 +15,9 @@ db:
 log: 
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info
+
+p1: p1v
+p2: 
+    p22: p22v
+    p23: p22v
+    p24: p22v
