@@ -15,3 +15,10 @@
 *.lock
 debug
 go.sum
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+
+node_modules

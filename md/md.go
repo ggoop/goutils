@@ -47,13 +47,16 @@ func GetEntity(id string) *MDEntity {
 	}
 	item := &MDEntity{}
 	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
-		db.Preload("Fields").Take(item, "id=? or code=?", id, id)
+		db.Preload("Fields").Take(item, "id=? or code=? or table_name=?", id, id,id)
 	}); err != nil {
 		glog.Errorf("di Provide error:%s", err)
 	}
 	if item.ID != "" {
 		mdCache[strings.ToLower(item.ID)] = item
 		mdCache[strings.ToLower(item.Code)] = item
+		if item.TableName!=""{
+			mdCache[strings.ToLower(item.TableName)] = item
+		}
 		return item
 	}
 	return nil
