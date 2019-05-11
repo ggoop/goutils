@@ -25,6 +25,7 @@ type IExector interface {
 	Group(query string, args ...interface{}) IExector
 	Page(page, pageSize int) IExector
 	SetContext(context map[string]interface{}) IExector
+	GetMainFrom() IQFrom
 }
 type oqlEntity struct {
 	Alia     string
@@ -38,11 +39,26 @@ type oqlField struct {
 	Field  *md.MDField
 	Path   string
 }
+type IQFrom interface {
+	GetQuery() string
+	GetAlia() string
+	GetExpr() string
+}
 type oqlFrom struct {
 	Query string
 	Alia  string
 	Expr  string
 }
+func (m *oqlFrom) GetQuery() string {
+	return m.Query
+}
+func (m *oqlFrom) GetAlia() string {
+	return m.Alia
+}
+func (m *oqlFrom) GetExpr() string {
+	return m.Expr
+}
+
 type oqlJoin struct {
 	Query string
 	Expr  string
@@ -549,4 +565,10 @@ func (m *exector) From(query string) IExector {
 func (m *exector) SetContext(context map[string]interface{}) IExector {
 	m.context = context
 	return m
+}
+func (m *exector) GetMainFrom() IQFrom {
+	if m.froms==nil||len(m.froms)==0{
+		return nil
+	}
+	return m.froms[0]
 }
