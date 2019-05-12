@@ -4,6 +4,7 @@ import (
 	"github.com/ggoop/goutils/md"
 )
 
+const md_domain string ="query"
 type Query struct {
 	md.ModelUnscoped
 	ScopeID     string        `gorm:"size:50;name:范围" json:"scope_id"`
@@ -22,7 +23,7 @@ type Query struct {
 }
 
 func (s *Query) MD() *md.Mder {
-	return &md.Mder{ID: "01e8f3067a691a50b46b697fa9f73d01", Name: "查询"}
+	return &md.Mder{ID: "01e8f3067a691a50b46b697fa9f73d01",Domain:md_domain, Name: "查询"}
 }
 
 type QueryField struct {
@@ -43,7 +44,7 @@ type QueryField struct {
 }
 
 func (s *QueryField) MD() *md.Mder {
-	return &md.Mder{ID: "01e8f30683641760aa9261a2b248c5f0", Name: "查询字段"}
+	return &md.Mder{ID: "01e8f30683641760aa9261a2b248c5f0",Domain:md_domain, Name: "查询字段"}
 }
 
 type QueryColumn struct {
@@ -60,7 +61,7 @@ type QueryColumn struct {
 }
 
 func (s *QueryColumn) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fb0b00455b78cec4b7174de", Name: "查询栏目"}
+	return &md.Mder{ID: "01e916da3fb0b00455b78cec4b7174de",Domain:md_domain, Name: "查询栏目"}
 }
 
 type QueryOrder struct {
@@ -76,7 +77,7 @@ type QueryOrder struct {
 }
 
 func (s *QueryOrder) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fa5e1f4c3118cec4b7174de", Name: "查询排序"}
+	return &md.Mder{ID: "01e916da3fa5e1f4c3118cec4b7174de",Domain:md_domain, Name: "查询排序"}
 }
 
 type QueryWhere struct {
@@ -98,5 +99,5 @@ type QueryWhere struct {
 }
 
 func (s *QueryWhere) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fb51af46f288cec4b7174de", Name: "查询条件"}
+	return &md.Mder{ID: "01e916da3fb51af46f288cec4b7174de",Domain:md_domain, Name: "查询条件"}
 }

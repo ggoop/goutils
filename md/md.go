@@ -25,8 +25,9 @@ type MD interface {
 	MD() *Mder
 }
 type Mder struct {
-	ID   string
-	Name string
+	ID     string
+	Name   string
+	Domain string
 }
 
 type md struct {
@@ -97,16 +98,34 @@ func (m *md) Migrate() {
 
 	entity := m.GetEntity()
 	vt := reflect.ValueOf(m.Value).Elem().Type()
-	newEntity := &MDEntity{TableName: scope.TableName(), Code: vt.Name(), Name: mdInfo.Name}
+	newEntity := &MDEntity{TableName: scope.TableName(), Code: vt.Name(), Name: mdInfo.Name, Domain: mdInfo.Domain}
 	newEntity.FullName = vt.String()
 	if entity == nil {
 		entity = newEntity
 		entity.ID = mdInfo.ID
 		m.db.Create(entity)
 		entity = m.GetEntity()
-	} else if entity.Name != newEntity.Name || entity.TableName != newEntity.TableName || entity.Code != newEntity.Code || entity.FullName != newEntity.FullName {
-		m.db.Model(entity).Update(newEntity)
-		entity = m.GetEntity()
+	} else {
+		updates := make(map[string]interface{})
+		if entity.Name != newEntity.Name {
+			updates["Name"] = newEntity.Name
+		}
+		if entity.TableName != newEntity.TableName {
+			updates["TableName"] = newEntity.TableName
+		}
+		if entity.Code != newEntity.Code {
+			updates["Code"] = newEntity.Code
+		}
+		if entity.FullName != newEntity.FullName {
+			updates["FullName"] = newEntity.FullName
+		}
+		if entity.Domain != newEntity.Domain {
+			updates["Domain"] = newEntity.Domain
+		}
+		if len(updates) > 0 {
+			m.db.Model(entity).Updates(updates)
+			entity = m.GetEntity()
+		}
 	}
 	codes := make([]string, 0)
 	for _, field := range scope.GetModelStruct().StructFields {
@@ -154,11 +173,41 @@ func (m *md) Migrate() {
 			//新增加
 			newField.ID = utils.GUID()
 			m.db.Create(&newField)
-		} else if oldField.Name != newField.Name || oldField.DBName != newField.DBName || oldField.AssociationKey != newField.AssociationKey || oldField.ForeignKey != newField.ForeignKey ||
-			oldField.IsNormal != newField.IsNormal || oldField.IsPrimaryKey != newField.IsPrimaryKey ||
-			oldField.Kind != newField.Kind || oldField.TypeID != newField.TypeID || oldField.TypeType != newField.TypeType || oldField.Limit != newField.Limit {
-			//变更的
-			m.db.Model(oldField).Update(newField)
+		} else {
+			updates := make(map[string]interface{})
+			if oldField.Name != newField.Name {
+				updates["Name"] = newField.Name
+			}
+			if oldField.DBName != newField.DBName {
+				updates["DBName"] = newField.DBName
+			}
+			if oldField.AssociationKey != newField.AssociationKey {
+				updates["AssociationKey"] = newField.AssociationKey
+			}
+			if oldField.ForeignKey != newField.ForeignKey {
+				updates["ForeignKey"] = newField.ForeignKey
+			}
+			if oldField.IsNormal != newField.IsNormal {
+				updates["IsNormal"] = newField.IsNormal
+			}
+			if oldField.IsPrimaryKey != newField.IsPrimaryKey {
+				updates["IsPrimaryKey"] = newField.IsPrimaryKey
+			}
+			if oldField.Kind != newField.Kind {
+				updates["Kind"] = newField.Kind
+			}
+			if oldField.TypeID != newField.TypeID {
+				updates["TypeID"] = newField.TypeID
+			}
+			if oldField.TypeType != newField.TypeType {
+				updates["TypeType"] = newField.TypeType
+			}
+			if oldField.Limit != newField.Limit {
+				updates["Limit"] = newField.Limit
+			}
+			if len(updates) > 0 {
+				m.db.Model(oldField).Updates(updates)
+			}
 		}
 	}
 	//删除不存在的
