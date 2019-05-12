@@ -16,7 +16,7 @@ import (
 type IExector interface {
 	PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error)
 	Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error)
-	Count(mysql *repositories.MysqlRepo) int
+	Count(mysql *repositories.MysqlRepo) (int,error)
 	Select(query string, args ...interface{}) IExector
 	Where(query string, args ...interface{}) IQWhere
 	OrWhere(query string, args ...interface{}) IQWhere
@@ -123,13 +123,15 @@ func (m *exector) formatField(entity *oqlEntity, field *md.MDField) *oqlField {
 	e := oqlField{Entity: entity, Field: field}
 	return &e
 }
-func (m *exector) Count(mysql *repositories.MysqlRepo) int {
+func (m *exector) Count(mysql *repositories.MysqlRepo)(int,error) {
 	if q, err := m.PrepareQuery(mysql); err != nil {
-		return 0
+		return 0,err
 	} else {
 		count := 0
-		q.Count(&count)
-		return count
+		if err:=q.Count(&count).Error;err!=nil{
+			return 0,err
+		}
+		return count,nil
 	}
 }
 func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error) {
