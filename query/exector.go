@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ggoop/goutils/context"
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
@@ -16,7 +17,7 @@ import (
 type IExector interface {
 	PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error)
 	Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error)
-	Count(mysql *repositories.MysqlRepo) (int,error)
+	Count(mysql *repositories.MysqlRepo) (int, error)
 	Select(query string, args ...interface{}) IExector
 	Where(query string, args ...interface{}) IQWhere
 	OrWhere(query string, args ...interface{}) IQWhere
@@ -24,7 +25,7 @@ type IExector interface {
 	Order(query string, args ...interface{}) IExector
 	Group(query string, args ...interface{}) IExector
 	Page(page, pageSize int) IExector
-	SetContext(context map[string]interface{}) IExector
+	SetContext(context *context.Context) IExector
 	GetMainFrom() IQFrom
 }
 type oqlEntity struct {
@@ -49,6 +50,7 @@ type oqlFrom struct {
 	Alia  string
 	Expr  string
 }
+
 func (m *oqlFrom) GetQuery() string {
 	return m.Query
 }
@@ -92,7 +94,7 @@ type exector struct {
 	groups   []*oqlGroup
 	page     int
 	pageSize int
-	context  map[string]interface{}
+	context  *context.Context
 }
 
 func NewExector(query string) IExector {
@@ -123,15 +125,15 @@ func (m *exector) formatField(entity *oqlEntity, field *md.MDField) *oqlField {
 	e := oqlField{Entity: entity, Field: field}
 	return &e
 }
-func (m *exector) Count(mysql *repositories.MysqlRepo)(int,error) {
+func (m *exector) Count(mysql *repositories.MysqlRepo) (int, error) {
 	if q, err := m.PrepareQuery(mysql); err != nil {
-		return 0,err
+		return 0, err
 	} else {
 		count := 0
-		if err:=q.Count(&count).Error;err!=nil{
-			return 0,err
+		if err := q.Count(&count).Error; err != nil {
+			return 0, err
 		}
-		return count,nil
+		return count, nil
 	}
 }
 func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error) {
@@ -228,6 +230,10 @@ func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) 
 	queryDB = m.buildJoins(queryDB)
 
 	if whereExpr, whereArgs, tag := m.buildWheres(m.wheres); tag > 0 {
+		// 上下文替换
+		if m.context != nil {
+			whereExpr = m.context.ValueReplace(whereExpr)
+		}
 		queryDB = queryDB.Where(whereExpr, whereArgs...)
 	}
 	queryDB = m.buildGroups(queryDB)
@@ -564,12 +570,12 @@ func (m *exector) From(query string) IExector {
 	}
 	return m
 }
-func (m *exector) SetContext(context map[string]interface{}) IExector {
+func (m *exector) SetContext(context *context.Context) IExector {
 	m.context = context
 	return m
 }
 func (m *exector) GetMainFrom() IQFrom {
-	if m.froms==nil||len(m.froms)==0{
+	if m.froms == nil || len(m.froms) == 0 {
 		return nil
 	}
 	return m.froms[0]

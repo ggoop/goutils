@@ -41,7 +41,14 @@ func (s *Context) Copy() *Context {
 	}
 	return &c
 }
-
+func (s *Context) ValueReplace(value string) string {
+	if s.data != nil {
+		for k, v := range s.data {
+			value = strings.Replace(value, "{"+k+"}", v, -1)
+		}
+	}
+	return value
+}
 func (s *Context) SetEntID(ent string) {
 	s.SetValue("ent_id", ent)
 }

@@ -84,6 +84,7 @@ func (s *QueryCase) GetExector() IExector {
 	if s.Page > 0 && s.PageSize > 0 {
 		exector.Page(s.Page, s.PageSize)
 	}
+	exector.SetContext(s.Context)
 	for _, v := range s.Columns {
 		if v.Name != "" {
 			exector.Select(v.Field + " as " + v.Name)

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -45,6 +46,7 @@ type Logger struct {
 	once     sync.Once
 	logs     sync.Pool
 	children *loggerMap
+	Stack    bool
 }
 
 // New returns a new golog with a default output to `os.Stdout`
@@ -119,6 +121,10 @@ var NopOutput = pio.NopOutput()
 // Returns itself.
 func (l *Logger) SetOutput(w io.Writer) *Logger {
 	l.Printer.SetOutput(w)
+	return l
+}
+func (l *Logger) SetStack(stack bool) *Logger {
+	l.Stack = stack
 	return l
 }
 func createPath(path string) error {
@@ -225,6 +231,9 @@ func (l *Logger) print(level Level, msg string, newLine bool) {
 		// newLine passed here in order for handler to know
 		// if this message derives from Println and Leveled functions
 		// or by simply, Print.
+		if level >= ErrorLevel && l.Stack {
+			msg = fmt.Sprintf("%s,at %s", msg, debug.Stack())
+		}
 		log := l.acquireLog(level, msg, newLine)
 		// if not handled by one of the handler
 		// then print it as usual.

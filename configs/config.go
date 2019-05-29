@@ -36,6 +36,7 @@ type DbConfig struct {
 type LogConfig struct {
 	Level string `mapstructure:"level"`
 	Path  string `mapstructure:"path"`
+	Stack bool   `mapstructure:"stack"`
 }
 
 const appConfigName = "app"

@@ -132,3 +132,6 @@ func SetPath(path string) {
 func GetLogger(key string) *Logger {
 	return getInstance(key)
 }
+func SetStack(stack bool) {
+	Default.SetStack(stack)
+}
