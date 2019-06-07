@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/query"
@@ -9,6 +10,8 @@ import (
 )
 
 func main() {
+	glog.SetPath(utils.JoinCurrentPath(configs.Default.Log.Path))
+	glog.AddLogFile(utils.JoinCurrentPath(configs.Default.Log.Path))
 	for i := 0; i < 100; i++ {
 		glog.Errorf("%v\r\n", utils.GUID())
 	}

@@ -15,7 +15,7 @@ db:
 log: 
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info
-
+  path: ./storage/logs
 p1: p1v
 p2: 
     p22: p22v
