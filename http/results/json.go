@@ -2,6 +2,9 @@ package results
 
 import (
 	"fmt"
+	"github.com/ggoop/goutils/configs"
+	"github.com/ggoop/goutils/glog"
+	"runtime/debug"
 	"strings"
 
 	"github.com/ggoop/goutils/utils"
@@ -11,7 +14,7 @@ import (
 
 type (
 	Result = mvc.Result
-	Map    = iris.Map
+	Map = iris.Map
 )
 
 func ToJson(data interface{}) Result {
@@ -69,5 +72,8 @@ func ToError(err interface{}, code ...int) Result {
 		obj["code"] = iris.StatusBadRequest
 	}
 	res.Object = obj
+	if configs.Default.App.Debug {
+		glog.Error(fmt.Sprintf("%s,at %s", obj["msg"], debug.Stack()))
+	}
 	return res
 }
