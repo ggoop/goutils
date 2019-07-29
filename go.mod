@@ -18,13 +18,14 @@ require (
 	github.com/json-iterator/go v1.1.5 // indirect
 	github.com/kataras/golog v0.0.0-20180321173939-03be10146386
 	github.com/kataras/iris v11.1.1+incompatible // indirect
-	github.com/kataras/pio v0.0.0-20190103105442-ea782b38602d // indirect
+	github.com/kataras/pio v0.0.0-20190103105442-ea782b38602d
 	github.com/klauspost/compress v1.4.1 // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible // indirect
+	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/spf13/viper v1.3.1
 	go.uber.org/dig v1.7.0
