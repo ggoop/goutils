@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ggoop/goutils/columnize"
 	"github.com/ggoop/goutils/glog"
 	"github.com/kataras/iris/context"
-	"github.com/ggoop/goutils/columnize"
 )
 
 type requestLoggerMiddleware struct {

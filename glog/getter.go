@@ -3,10 +3,10 @@ package glog
 import (
 	"database/sql/driver"
 	"fmt"
+	"github.com/spf13/viper"
 	"reflect"
 	"regexp"
 	"strconv"
-	"sync"
 	"time"
 	"unicode"
 )
@@ -16,10 +16,26 @@ var (
 	numericPlaceHolderRegexp = regexp.MustCompile(`\$\d+`)
 )
 
-var mapValues map[string]*Logger = make(map[string]*Logger)
-var mapKeys map[string]bool = make(map[string]bool)
-var mu sync.Mutex
-var logDir string = "storage/logs"
+type LogConfig struct {
+	Level string `mapstructure:"level"`
+	Path  string `mapstructure:"path"`
+	Stack bool   `mapstructure:"stack"`
+}
+
+func readConfig() *LogConfig {
+	config := &LogConfig{}
+	viper.SetConfigType("yaml")
+
+	viper.SetConfigName("app")
+	viper.AddConfigPath(joinCurrentPath("env"))
+	if err := viper.ReadInConfig(); err != nil {
+		//Errorf("Fatal error when reading %s config file:%s", "app", err)
+	}
+	if err := viper.UnmarshalKey("log", config); err != nil {
+		//Errorf("Fatal error when reading %s config file:%s", "app", err)
+	}
+	return config
+}
 
 func isPrintable(s string) bool {
 	for _, r := range s {
@@ -33,23 +49,15 @@ func NowFunc() time.Time {
 	return time.Now()
 }
 
-var sqlLogFormatter = func(values ...interface{}) (messages []interface{}) {
+func (l *Logger) sqlLog(values ...interface{}){
 	if len(values) > 1 {
 		var (
 			sql             string
 			formattedValues []string
 			level           = values[0]
-			currentTime     = "\n\033[33m[" + NowFunc().Format("2006-01-02 15:04:05") + "]\033[0m"
-			source          = fmt.Sprintf("\033[35m(%v)\033[0m", values[1])
 		)
 
-		messages = []interface{}{source, currentTime}
-
 		if level == "sql" {
-			// duration
-			messages = append(messages, fmt.Sprintf(" \033[36;1m[%.2fms]\033[0m ", float64(values[2].(time.Duration).Nanoseconds()/1e4)/100.0))
-			// sql
-
 			for _, value := range values[4].([]interface{}) {
 				indirectValue := reflect.Indirect(reflect.ValueOf(value))
 				if indirectValue.IsValid() {
@@ -97,41 +105,13 @@ var sqlLogFormatter = func(values ...interface{}) (messages []interface{}) {
 					}
 				}
 			}
+			l.Debug(sql,
+				String("type","sql"),
+				String("rows",strconv.FormatInt(values[5].(int64), 10)),
+				String("duration",fmt.Sprintf("%.2fms", float64(values[2].(time.Duration).Nanoseconds()/1e4)/100.0)))
 
-			messages = append(messages, sql)
-			messages = append(messages, fmt.Sprintf(" \n\033[36;31m[%v]\033[0m ", strconv.FormatInt(values[5].(int64), 10)+" rows affected or returned "))
-		} else {
-			messages = append(messages, "\033[31;1m")
-			messages = append(messages, values[2:]...)
-			messages = append(messages, "\033[0m")
 		}
 	}
 
 	return
-}
-
-func getInstance(key string) *Logger {
-	if !mapKeys[key] {
-		mu.Lock()
-		defer mu.Unlock()
-		if !mapKeys[key] {
-			newLog := New()
-			newLog.AddLogFile(key, logDir)
-			mapKeys[key] = true
-			mapValues[key] = newLog
-		}
-	}
-	return mapValues[key]
-}
-func AddLogFile(dir string) {
-	Default.AddLogFile("", dir)
-}
-func SetPath(path string) {
-	logDir = path
-}
-func GetLogger(key string) *Logger {
-	return getInstance(key)
-}
-func SetStack(stack bool) {
-	Default.SetStack(stack)
 }

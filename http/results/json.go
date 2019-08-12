@@ -14,7 +14,7 @@ import (
 
 type (
 	Result = mvc.Result
-	Map = iris.Map
+	Map    = iris.Map
 )
 
 func ToJson(data interface{}) Result {

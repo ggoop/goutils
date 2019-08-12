@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/query"
@@ -10,26 +9,22 @@ import (
 )
 
 func main() {
-	glog.SetPath(utils.JoinCurrentPath(configs.Default.Log.Path))
-	glog.AddLogFile(utils.JoinCurrentPath(configs.Default.Log.Path))
-	for i := 0; i < 100; i++ {
-		glog.Errorf("%v\r\n", utils.GUID())
+	//glog.SetPath(utils.JoinCurrentPath(configs.Default.Log.Path))
+	//glog.AddLogFile(utils.JoinCurrentPath(configs.Default.Log.Path))
+	for i := 0; i < 10; i++ {
+		glog.Info(utils.GUID(), glog.String("aa", "dd"), glog.Int("a234", 33))
+		glog.Infof("Failed to fetch URL: %v", i)
 	}
-	//test_query()
+	test_query()
 }
 func test_query() {
 	mysql := repositories.NewMysqlRepo()
-
+	mysql.SetLogger(glog.GetLogger("sql"))
 	if err := di.Global.Provide(func() *repositories.MysqlRepo {
 		return mysql
 	}); err != nil {
 		glog.Errorf("di Provide error:%s", err)
 	}
-
-	exector:=query.NewExector("amb_elements")
-	exector.Where("Purpose.Name like 'a'")
-	q,_:=exector.PrepareQuery(mysql)
-	glog.Error(q.QueryExpr())
-
-	glog.Errorf("%v\r\n","dd")
+	items:=make([]query.Query,0)
+	mysql.Model(query.Query{}).Where("id=?","333").Find(&items)
 }

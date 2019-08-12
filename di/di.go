@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 )
 
-var Global =New()
+var Global = New()
 
 func SetGlobal(container *dig.Container) {
 	if Global == nil {
