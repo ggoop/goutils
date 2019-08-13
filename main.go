@@ -12,10 +12,10 @@ func main() {
 	//glog.SetPath(utils.JoinCurrentPath(configs.Default.Log.Path))
 	//glog.AddLogFile(utils.JoinCurrentPath(configs.Default.Log.Path))
 	for i := 0; i < 10; i++ {
-		glog.Info(utils.GUID(), glog.String("aa", "dd"), glog.Int("a234", 33))
-		glog.Infof("Failed to fetch URL: %v", i)
+		glog.Info(utils.GUID())
 	}
-	test_query()
+
+	//test_query()
 }
 func test_query() {
 	mysql := repositories.NewMysqlRepo()

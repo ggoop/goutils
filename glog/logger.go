@@ -101,10 +101,9 @@ func createLogger(args ...string) *Logger {
 		Compress:  true,
 	}
 	encoderConfig := zap.NewProductionEncoderConfig()
-	//encoderConfig := zap.NewDevelopmentEncoderConfig()
 
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	
+
 	logLevel := zap.NewAtomicLevel()
 	logLevel.SetLevel(getLevelByTag(envConfig.Level))
 
