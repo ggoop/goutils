@@ -71,7 +71,14 @@ func (m *ContextHandle) CheckSession(ctx iris.Context) (*context.Context, error)
 		err  error
 		find bool
 	)
-
+	if !find {
+		if str := ctx.GetCookie(context.AuthSessionKey); str != "" {
+			uc, err = (&context.Context{}).FromTokenString(str)
+			if err == nil {
+				find = true
+			}
+		}
+	}
 	if m.Sessions != nil {
 		session := m.Sessions.Start(ctx)
 		if v := session.Get(context.AuthSessionKey); v != nil {
@@ -80,15 +87,7 @@ func (m *ContextHandle) CheckSession(ctx iris.Context) (*context.Context, error)
 			} else if obj, ok := v.(*context.Context); ok {
 				uc = obj
 			}
-		}
-		find = true
-	}
-	if !find {
-		if str := ctx.GetCookie(context.AuthSessionKey); str != "" {
-			uc, err = uc.FromTokenString(str)
-			if err == nil {
-				find = true
-			}
+			find = true
 		}
 	}
 	if !find {
@@ -108,7 +107,7 @@ func (m *ContextHandle) CheckJWT(ctx iris.Context) (*context.Context, error) {
 	if token == "" {
 		return uc, fmt.Errorf("Authorization header format must be Bearer {token}")
 	}
-	if uc, err = uc.FromTokenString(token); err != nil {
+	if uc, err = (&context.Context{}).FromTokenString(token); err != nil {
 		return uc, err
 	}
 	return uc, nil
