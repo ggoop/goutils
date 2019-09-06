@@ -58,9 +58,25 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 	}
 	ctx.Values().Set(context.DefaultContextKey, uc)
 	if ctx.IsAjax() {
-		ctx.Header("Access-Control-Allow-Origin", "*")
+		reqMethod :=strings.ToUpper(ctx.GetHeader("Access-Control-Request-Method"))
+		methods:=[]string{"HEAD", "GET", "POST"}
+		for _,m:=range methods{
+			if m==reqMethod{
+				ctx.Header("Access-Control-Allow-Methods",reqMethod)
+			}
+		}
 		ctx.Header("Access-Control-Allow-Headers", "*")
 		ctx.Header("Access-Control-Allow-Credentials", "true")
+
+		if origin := ctx.GetHeader("Origin");origin!=""{
+			ctx.Header("Access-Control-Allow-Origin", origin)
+		}else{
+			ctx.Header("Access-Control-Allow-Origin", "*")
+		}
+
+
+
+
 	}
 	ctx.Next()
 
