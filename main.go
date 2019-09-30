@@ -13,11 +13,11 @@ func main() {
 		glog.Info(utils.GUID())
 	}
 
-	//test_query()
+	test_query()
 }
 func test_query() {
 	excor := files.NewExcelSv()
-	if data, err := excor.GetExcelData("/Users/samw/project/suite/suite-docs/func.xlsx"); err != nil {
+	if data, err := excor.GetExcelData("/Users/samw/project/suite/suite-psc/suite-psc-sv/storage/inits/func.xlsx"); err != nil {
 		glog.Error(err)
 	} else {
 		glog.Error(data)

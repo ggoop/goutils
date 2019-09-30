@@ -123,6 +123,7 @@ func GetMapValue(key string, row map[string]interface{}) interface{} {
 	return nil
 }
 func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
+	dataFromRow := 2
 	xlsx, err := excelize.OpenFile(filePath)
 	if err != nil {
 		return nil, err
@@ -139,9 +140,10 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 		return nil, nil
 	}
 	allRows := xlsx.GetRows(sheetName)
-	if len(allRows) < 3 {
+	if len(allRows) <= dataFromRow {
 		return nil, nil
 	}
+
 	importData := ImportData{Columns: make(map[string]string)}
 	//取列数
 	colsMap := make(map[int]string)
@@ -156,17 +158,21 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 	if len(colsMap) == 0 {
 		return nil, nil
 	}
-	dataRows := allRows[2:]
+	dataRows := allRows[dataFromRow:]
 
 	datas := make([]map[string]interface{}, 0)
 	isData := false
-	for _, row := range dataRows {
+	for i, row := range dataRows {
 		isData = false
 		values := make(map[string]interface{}, 0)
 		for c, value := range row {
 			if cName, ok := colsMap[c]; ok {
 				if c == 0 && value != "" {
 					isData = true
+				}
+				//处理合并单元格时，取出来的空值时
+				if isData && c > 0 && value == "" {
+					value = xlsx.GetCellValue(sheetName, fmt.Sprintf("%v%v", excelize.ToAlphaString(c), i+dataFromRow))
 				}
 				values[cName] = value
 			}
@@ -182,6 +188,7 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 }
 
 func (s *ExcelSv) ToExcel(data *ToExcel) (*FileData, error) {
+
 	xlsx := excelize.NewFile()
 	sheetName := xlsx.GetSheetName(xlsx.GetActiveSheetIndex())
 	colMap := make(map[string]ExcelColumn)
