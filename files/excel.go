@@ -49,8 +49,8 @@ type ExcelSv struct {
 func NewExcelSv() *ExcelSv {
 	return &ExcelSv{}
 }
-func (s *ExcelSv) GetMapStringValue(key string, row map[string]interface{}) string {
-	v := s.GetMapValue(key, row)
+func GetMapStringValue(key string, row map[string]interface{}) string {
+	v := GetMapValue(key, row)
 	if v == nil {
 		return ""
 	}
@@ -59,15 +59,15 @@ func (s *ExcelSv) GetMapStringValue(key string, row map[string]interface{}) stri
 	}
 	return ""
 }
-func (s *ExcelSv) GetMapIntValue(key string, row map[string]interface{}) int {
-	v := s.GetMapValue(key, row)
+func GetMapIntValue(key string, row map[string]interface{}) int {
+	v := GetMapValue(key, row)
 	if v == nil {
 		return 0
 	}
 	return gcast.ToInt(v)
 }
-func (s *ExcelSv) GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
-	v := s.GetMapValue(key, row)
+func GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
+	v := GetMapValue(key, row)
 	if v == nil {
 		return nil
 	}
@@ -76,8 +76,8 @@ func (s *ExcelSv) GetMapTimeValue(key string, row map[string]interface{}) *md.Ti
 	}
 	return nil
 }
-func (s *ExcelSv) GetMapBoolValue(key string, row map[string]interface{}, defaultValue bool) bool {
-	v := s.GetMapValue(key, row)
+func GetMapBoolValue(key string, row map[string]interface{}, defaultValue bool) bool {
+	v := GetMapValue(key, row)
 	if v == nil {
 		return defaultValue
 	}
@@ -96,8 +96,8 @@ func (s *ExcelSv) GetMapBoolValue(key string, row map[string]interface{}, defaul
 	}
 	return gcast.ToBool(v)
 }
-func (s *ExcelSv) GetMapDecimalValue(key string, row map[string]interface{}) decimal.Decimal {
-	v := s.GetMapValue(key, row)
+func GetMapDecimalValue(key string, row map[string]interface{}) decimal.Decimal {
+	v := GetMapValue(key, row)
 	if v == nil {
 		return decimal.Zero
 	}
@@ -113,7 +113,7 @@ func (s *ExcelSv) GetMapDecimalValue(key string, row map[string]interface{}) dec
 	}
 	return decimal.Zero
 }
-func (s *ExcelSv) GetMapValue(key string, row map[string]interface{}) interface{} {
+func GetMapValue(key string, row map[string]interface{}) interface{} {
 	if v, ok := row[key]; ok {
 		return v
 	}
