@@ -16,12 +16,13 @@ import (
 )
 
 type AppConfig struct {
-	Token  string `mapstructure:"token"`
-	Code   string `mapstructure:"code"`
-	Name   string `mapstructure:"name"`
-	Port   string `mapstructure:"port"`
-	Locale string `mapstructure:"locale"`
-	Debug  bool   `mapstructure:"debug"`
+	Token   string `mapstructure:"token"`
+	Code    string `mapstructure:"code"`
+	Name    string `mapstructure:"name"`
+	Port    string `mapstructure:"port"`
+	Locale  string `mapstructure:"locale"`
+	Debug   bool   `mapstructure:"debug"`
+	Storage string `mapstructure:"storage"`
 }
 type DbConfig struct {
 	Driver    string `mapstructure:"driver"`
@@ -165,6 +166,9 @@ func New() {
 	}
 	if Default.App.Token == "" {
 		Default.App.Token = "01e8f6a984101b20b24e4d172ec741be"
+	}
+	if Default.App.Storage == "" {
+		Default.App.Storage = "./storage"
 	}
 	if Default.Db.Driver == "" {
 		Default.Db.Driver = "mysql"

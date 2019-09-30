@@ -1,10 +1,8 @@
 package main
 
 import (
-	"github.com/ggoop/goutils/di"
+	"github.com/ggoop/goutils/files"
 	"github.com/ggoop/goutils/glog"
-	"github.com/ggoop/goutils/query"
-	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -18,13 +16,10 @@ func main() {
 	//test_query()
 }
 func test_query() {
-	mysql := repositories.NewMysqlRepo()
-	mysql.SetLogger(glog.GetLogger("sql"))
-	if err := di.Global.Provide(func() *repositories.MysqlRepo {
-		return mysql
-	}); err != nil {
-		glog.Errorf("di Provide error:%s", err)
+	excor := files.NewExcelSv()
+	if data, err := excor.GetExcelData("/Users/samw/project/suite/suite-docs/func.xlsx"); err != nil {
+		glog.Error(err)
+	} else {
+		glog.Error(data)
 	}
-	items:=make([]query.Query,0)
-	mysql.Model(query.Query{}).Where("id=?","333").Find(&items)
 }

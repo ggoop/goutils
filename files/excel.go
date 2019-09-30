@@ -1,0 +1,234 @@
+package files
+
+import (
+	"fmt"
+	"path"
+
+	"github.com/shopspring/decimal"
+
+	"github.com/ggoop/goutils/configs"
+	"github.com/ggoop/goutils/gcast"
+	"github.com/ggoop/goutils/md"
+	"github.com/ggoop/goutils/utils"
+
+	"github.com/360EntSecGroup-Skylar/excelize"
+
+	"github.com/ggoop/goutils/glog"
+)
+
+type FileData struct {
+	FileName string
+	Dir      string
+	FullPath string
+}
+type ImportData struct {
+	Columns map[string]string
+	Datas   []map[string]interface{}
+}
+
+type ExcelColumn struct {
+	Name      string
+	Title     string
+	Hidden    bool
+	excelName string
+}
+type ExcelCell struct {
+	Name  string
+	Value interface{}
+}
+type ToExcel struct {
+	Columns []ExcelColumn
+	Datas   [][]ExcelCell
+}
+type ExcelSv struct {
+}
+
+/**
+* 创建服务实例
+ */
+func NewExcelSv() *ExcelSv {
+	return &ExcelSv{}
+}
+func (s *ExcelSv) GetMapStringValue(key string, row map[string]interface{}) string {
+	v := s.GetMapValue(key, row)
+	if v == nil {
+		return ""
+	}
+	if v, ok := v.(string); ok {
+		return v
+	}
+	return ""
+}
+func (s *ExcelSv) GetMapIntValue(key string, row map[string]interface{}) int {
+	v := s.GetMapValue(key, row)
+	if v == nil {
+		return 0
+	}
+	return gcast.ToInt(v)
+}
+func (s *ExcelSv) GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
+	v := s.GetMapValue(key, row)
+	if v == nil {
+		return nil
+	}
+	if vv, ok := v.(string); ok {
+		return md.CreateTimePtr(vv)
+	}
+	return nil
+}
+func (s *ExcelSv) GetMapBoolValue(key string, row map[string]interface{}, defaultValue bool) bool {
+	v := s.GetMapValue(key, row)
+	if v == nil {
+		return defaultValue
+	}
+	if vv, ok := v.(string); ok {
+		if vv == "true" || vv == "1" || vv == "T" {
+			return true
+		} else {
+			return false
+		}
+	} else if vv, ok := v.(int); ok {
+		if vv > 0 {
+			return true
+		} else {
+			return false
+		}
+	}
+	return gcast.ToBool(v)
+}
+func (s *ExcelSv) GetMapDecimalValue(key string, row map[string]interface{}) decimal.Decimal {
+	v := s.GetMapValue(key, row)
+	if v == nil {
+		return decimal.Zero
+	}
+	if vv, ok := v.(decimal.Decimal); ok {
+		return vv
+	} else if vv, ok := v.(string); ok {
+		rv, _ := decimal.NewFromString(vv)
+		return rv
+	} else if vv, ok := v.(float64); ok {
+		return decimal.NewFromFloat(vv)
+	} else if vv, ok := v.(float32); ok {
+		return decimal.NewFromFloat32(vv)
+	}
+	return decimal.Zero
+}
+func (s *ExcelSv) GetMapValue(key string, row map[string]interface{}) interface{} {
+	if v, ok := row[key]; ok {
+		return v
+	}
+	if v, ok := row[utils.SnakeString(key)]; ok {
+		return v
+	}
+	return nil
+}
+func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
+	xlsx, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	//第一行为字段标识
+	//条二行为行名称
+	// 获取 Sheet1 上所有单元格,模板，需要预制一个列标识，_state,为空后，后边的行将都不会导入
+	sheetName := ""
+	for _, v := range xlsx.GetSheetMap() {
+		sheetName = v
+		break
+	}
+	if sheetName == "" {
+		return nil, nil
+	}
+	allRows := xlsx.GetRows(sheetName)
+	if len(allRows) < 3 {
+		return nil, nil
+	}
+	importData := ImportData{Columns: make(map[string]string)}
+	//取列数
+	colsMap := make(map[int]string)
+	cols := allRows[0]
+	titles := allRows[1]
+	for c, name := range cols {
+		if name != "" {
+			colsMap[c] = name
+			importData.Columns[name] = titles[c]
+		}
+	}
+	if len(colsMap) == 0 {
+		return nil, nil
+	}
+	dataRows := allRows[2:]
+
+	datas := make([]map[string]interface{}, 0)
+	isData := false
+	for _, row := range dataRows {
+		isData = false
+		values := make(map[string]interface{}, 0)
+		for c, value := range row {
+			if cName, ok := colsMap[c]; ok {
+				if c == 0 && value != "" {
+					isData = true
+				}
+				values[cName] = value
+			}
+		}
+		if isData {
+			datas = append(datas, values)
+		} else {
+			break
+		}
+	}
+	importData.Datas = datas
+	return &importData, nil
+}
+
+func (s *ExcelSv) ToExcel(data *ToExcel) (*FileData, error) {
+	xlsx := excelize.NewFile()
+	sheetName := xlsx.GetSheetName(xlsx.GetActiveSheetIndex())
+	colMap := make(map[string]ExcelColumn)
+	//增加系统默认导出列
+	columns := make([]ExcelColumn, 0)
+	for _, c := range data.Columns {
+		columns = append(columns, c)
+	}
+	startIndex := 2
+	for i, c := range columns {
+		cName := excelize.ToAlphaString(i)
+		columns[i].excelName = cName
+		colMap[c.Name] = columns[i]
+
+		xlsx.SetCellValue(sheetName, fmt.Sprintf("%s%d", cName, 1), c.Name)
+		xlsx.SetCellValue(sheetName, fmt.Sprintf("%s%d", cName, 2), c.Title)
+	}
+	xlsx.SetRowVisible(sheetName, 0, false)
+	//设置数据列宽度
+	xlsx.SetColWidth("Sheet1", "A", columns[len(columns)-1].excelName, 20)
+	//border
+	if style, err := xlsx.NewStyle(`{"border":[{"type":"left","color":"666666","style":1},{"type":"top","color":"666666","style":1},{"type":"bottom","color":"666666","style":1},{"type":"right","color":"666666","style":1}]}`); err == nil {
+		xlsx.SetCellStyle(sheetName, "A1", fmt.Sprintf("%s%d", columns[len(columns)-1].excelName, len(data.Datas)+startIndex), style)
+	}
+	//header
+	if style, err := xlsx.NewStyle(`{"font":{"bold":true},"fill":{"type":"pattern","pattern":1,"color":["#dddddd"]},"border":[{"type":"left","color":"666666","style":1},{"type":"top","color":"666666","style":1},{"type":"bottom","color":"666666","style":1},{"type":"right","color":"666666","style":1}]}`); err == nil {
+		xlsx.SetCellStyle(sheetName, "A1", fmt.Sprintf("%s%d", columns[len(columns)-1].excelName, startIndex), style)
+	}
+	if style, err := xlsx.NewStyle(`{"font":{"bold":true},"fill":{"type":"pattern","pattern":1,"color":["#dddddd"]},"border":[{"type":"left","color":"666666","style":1},{"type":"top","color":"666666","style":1},{"type":"bottom","color":"666666","style":1},{"type":"right","color":"666666","style":1}]}`); err == nil {
+		xlsx.SetCellStyle(sheetName, "A1", fmt.Sprintf("%s%d", "A", len(data.Datas)+startIndex), style)
+	}
+
+	for r, row := range data.Datas {
+		for _, cell := range row {
+			if c, ok := colMap[cell.Name]; ok {
+				xlsx.SetCellValue(sheetName, fmt.Sprintf("%s%d", c.excelName, r+startIndex+1), cell.Value)
+			}
+		}
+	}
+	fileData := FileData{}
+	fileData.FileName = fmt.Sprintf("%s.%s", utils.GUID(), "xlsx")
+	fileData.Dir = path.Join(configs.Default.App.Storage, "export", md.NewTime().Format("200601"))
+	utils.CreatePath(fileData.Dir)
+	fileData.FullPath = utils.JoinCurrentPath(path.Join(fileData.Dir, fileData.FileName))
+	if err := xlsx.SaveAs(fileData.FullPath); err != nil {
+		glog.Error(err)
+		return nil, err
+	}
+	return &fileData, nil
+}
