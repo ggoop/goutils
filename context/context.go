@@ -76,28 +76,28 @@ func (s *Context) ExpiresAt() int64 {
 // 验证
 func (s *Context) Valid(user, ent bool) error {
 	if user && s.VerifyUser() != nil {
-		return fmt.Errorf("用户验证失败")
+		return utils.NewError(fmt.Errorf("用户验证失败"), 401)
 	}
 	if ent && s.VerifyEnt() != nil {
-		return fmt.Errorf("企业验证失败")
+		return utils.NewError(fmt.Errorf("企业验证失败"), 401)
 	}
 	return nil
 }
 func (c *Context) VerifyClient() error {
 	if c.ClientID() == "" {
-		return fmt.Errorf("客户端验证失败")
+		return utils.NewError(fmt.Errorf("客户端验证失败"), 401)
 	}
 	return nil
 }
 func (c *Context) VerifyUser() error {
 	if c.UserID() == "" {
-		return fmt.Errorf("用户验证失败")
+		return utils.NewError(fmt.Errorf("用户验证失败"), 401)
 	}
 	return nil
 }
 func (c *Context) VerifyEnt() error {
 	if c.EntID() == "" {
-		return fmt.Errorf("企业验证失败")
+		return utils.NewError(fmt.Errorf("企业验证失败"), 401)
 	}
 	return nil
 }

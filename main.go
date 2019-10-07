@@ -13,7 +13,7 @@ func main() {
 		glog.Info(utils.GUID())
 	}
 
-	test_query()
+	//test_query()
 }
 func test_query() {
 	excor := files.NewExcelSv()

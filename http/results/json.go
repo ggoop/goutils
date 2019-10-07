@@ -44,9 +44,14 @@ func ToSingle(data interface{}) Result {
 func ToError(err interface{}, code ...int) Result {
 	res := mvc.Response{}
 	obj := iris.Map{}
+	httpCode := iris.StatusBadRequest
+	dataCode := iris.StatusBadRequest
 	if ev, ok := err.(utils.GError); ok {
 		obj["msg"] = ev.Error()
-		obj["code"] = ev.Code
+		if ev.Code > 0 {
+			dataCode = ev.Code
+			httpCode = ev.Code
+		}
 	} else if ev, ok := err.(error); ok {
 		obj["msg"] = ev.Error()
 	} else {
@@ -55,22 +60,18 @@ func ToError(err interface{}, code ...int) Result {
 	//http 状态码
 	if code != nil && len(code) > 0 {
 		if code[0] >= 100 && code[0] < 1000 {
-			res.Code = code[0]
+			httpCode = code[0]
+			dataCode = code[0]
 		} else {
-			obj["code"] = code[0]
-			res.Code = iris.StatusBadRequest
+			dataCode = code[0]
 		}
-	} else {
-		res.Code = iris.StatusBadRequest
 	}
 	//使用指定的异常代码
 	if code != nil && len(code) > 1 {
-		obj["code"] = code[1]
+		dataCode = code[1]
 	}
-	//如果没有设置异常代码，则使用400异常
-	if _, ok := obj["code"]; !ok {
-		obj["code"] = iris.StatusBadRequest
-	}
+	obj["code"] = dataCode
+	res.Code = httpCode
 	res.Object = obj
 	if configs.Default.App.Debug {
 		glog.Error(fmt.Sprintf("%s,at %s", obj["msg"], debug.Stack()))
