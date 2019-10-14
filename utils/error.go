@@ -23,7 +23,7 @@ func (e GError) Error() string {
 
 // err : error ,
 // code :x xx xxx xxxx,level-product-app-number 10bit
-func NewError(err interface{}, code int) GError {
+func NewError(err interface{}, code ...int) GError {
 	var e error
 	if v, ok := err.(GError); ok {
 		e = v
@@ -34,5 +34,9 @@ func NewError(err interface{}, code int) GError {
 	} else {
 		e = errors.New(fmt.Sprint(err))
 	}
-	return GError{Err: e, Code: code}
+	r := GError{Err: e}
+	if code != nil && len(code) > 0 {
+		r.Code = code[0]
+	}
+	return r
 }
