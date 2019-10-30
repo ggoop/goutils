@@ -1,4 +1,4 @@
-package gcast
+package utils
 
 import (
 	"reflect"

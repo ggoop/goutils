@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ggoop/goutils/context"
+	"github.com/ggoop/goutils/utils"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/sessions"
@@ -37,17 +38,24 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 		uc  *context.Context
 		err error
 	)
-	if IsJWTContext(ctx) {
-		if uc, err = m.CheckJWT(ctx); err != nil {
-			ctx.StatusCode(401)
-			ctx.StopExecution()
-			return
+	if ctxValue := ctx.Values().Get(context.DefaultContextKey); ctxValue != nil {
+		if old := ctxValue.(*context.Context); old != nil && old.ID() != "" {
+			uc = old
 		}
-	} else {
-		if uc, err = m.CheckSession(ctx); err != nil {
-			ctx.StatusCode(401)
-			ctx.StopExecution()
-			return
+	}
+	if uc == nil {
+		if IsJWTContext(ctx) {
+			if uc, err = m.CheckJWT(ctx); err != nil {
+				ctx.StatusCode(401)
+				ctx.StopExecution()
+				return
+			}
+		} else {
+			if uc, err = m.CheckSession(ctx); err != nil {
+				ctx.StatusCode(401)
+				ctx.StopExecution()
+				return
+			}
 		}
 	}
 	if uc == nil {
@@ -58,24 +66,21 @@ func (m *ContextHandle) Handle(ctx iris.Context) {
 	}
 	ctx.Values().Set(context.DefaultContextKey, uc)
 	if ctx.IsAjax() {
-		reqMethod :=strings.ToUpper(ctx.GetHeader("Access-Control-Request-Method"))
-		methods:=[]string{"HEAD", "GET", "POST"}
-		for _,m:=range methods{
-			if m==reqMethod{
-				ctx.Header("Access-Control-Allow-Methods",reqMethod)
+		reqMethod := strings.ToUpper(ctx.GetHeader("Access-Control-Request-Method"))
+		methods := []string{"HEAD", "GET", "POST"}
+		for _, m := range methods {
+			if m == reqMethod {
+				ctx.Header("Access-Control-Allow-Methods", reqMethod)
 			}
 		}
 		ctx.Header("Access-Control-Allow-Headers", "*")
 		ctx.Header("Access-Control-Allow-Credentials", "true")
 
-		if origin := ctx.GetHeader("Origin");origin!=""{
+		if origin := ctx.GetHeader("Origin"); origin != "" {
 			ctx.Header("Access-Control-Allow-Origin", origin)
-		}else{
+		} else {
 			ctx.Header("Access-Control-Allow-Origin", "*")
 		}
-
-
-
 
 	}
 	ctx.Next()
@@ -112,6 +117,7 @@ func (m *ContextHandle) CheckSession(ctx iris.Context) (*context.Context, error)
 		}
 		return uc, nil
 	}
+	uc.SetID(utils.GUID())
 	return uc, nil
 }
 func (m *ContextHandle) CheckJWT(ctx iris.Context) (*context.Context, error) {
@@ -126,6 +132,7 @@ func (m *ContextHandle) CheckJWT(ctx iris.Context) (*context.Context, error) {
 	if uc, err = (&context.Context{}).FromTokenString(token); err != nil {
 		return uc, err
 	}
+	uc.SetID(utils.GUID())
 	return uc, nil
 }
 

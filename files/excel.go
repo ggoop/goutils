@@ -7,7 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/ggoop/goutils/configs"
-	"github.com/ggoop/goutils/gcast"
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/utils"
 
@@ -64,7 +63,7 @@ func GetMapIntValue(key string, row map[string]interface{}) int {
 	if v == nil {
 		return 0
 	}
-	return gcast.ToInt(v)
+	return utils.ToInt(v)
 }
 func GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
 	v := GetMapValue(key, row)
@@ -94,7 +93,7 @@ func GetMapBoolValue(key string, row map[string]interface{}, defaultValue bool) 
 			return false
 		}
 	}
-	return gcast.ToBool(v)
+	return utils.ToBool(v)
 }
 func GetMapDecimalValue(key string, row map[string]interface{}) decimal.Decimal {
 	v := GetMapValue(key, row)
@@ -172,7 +171,7 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 				}
 				//处理合并单元格时，取出来的空值时
 				if isData && c > 0 && value == "" {
-					value = xlsx.GetCellValue(sheetName, fmt.Sprintf("%v%v", excelize.ToAlphaString(c), i+dataFromRow))
+					value = xlsx.GetCellValue(sheetName, fmt.Sprintf("%v%v", excelize.ToAlphaString(c), i+1+dataFromRow))
 				}
 				values[cName] = value
 			}

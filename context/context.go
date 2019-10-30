@@ -49,6 +49,13 @@ func (s *Context) ValueReplace(value string) string {
 	}
 	return value
 }
+func (s *Context) SetID(id string) {
+	s.SetValue("id", id)
+}
+func (s *Context) ID() string {
+	return s.GetValue("id")
+}
+
 func (s *Context) SetEntID(ent string) {
 	s.SetValue("ent_id", ent)
 }

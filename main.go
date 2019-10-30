@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/ggoop/goutils/files"
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/utils"
 )
@@ -15,13 +14,8 @@ func main() {
 	}
 	//glog.Error(utils.GetIpAddrs())
 
-	//test_query()
+	test_query()
 }
 func test_query() {
-	excor := files.NewExcelSv()
-	if data, err := excor.GetExcelData("/Users/samw/project/suite/suite-psc/suite-psc-sv/storage/inits/func.xlsx"); err != nil {
-		glog.Error(err)
-	} else {
-		glog.Error(data)
-	}
+	glog.Error(utils.GetIpAddrs())
 }
