@@ -21,6 +21,7 @@ type FileData struct {
 	FullPath string
 }
 type ImportData struct {
+	Name    string
 	Columns map[string]string
 	Datas   []map[string]interface{}
 }
@@ -121,29 +122,51 @@ func GetMapValue(key string, row map[string]interface{}) interface{} {
 	}
 	return nil
 }
-func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
-	dataFromRow := 2
+func (s *ExcelSv) GetExcelDatas(filePath string, sheetNames ...string) ([]ImportData, error) {
 	xlsx, err := excelize.OpenFile(filePath)
 	if err != nil {
 		return nil, err
 	}
+	rtnDatas := make([]ImportData, 0)
+	if len(sheetNames) == 0 || sheetNames[0] == "*" {
+		for _, sheetName := range xlsx.GetSheetMap() {
+			if data, err := s.getSheetData(xlsx, sheetName); err != nil {
+				return nil, err
+			} else if len(data.Columns) > 0 && len(data.Datas) > 0 {
+				rtnDatas = append(rtnDatas, data)
+			}
+		}
+	} else {
+		for _, sheetName := range sheetNames {
+			if data, err := s.getSheetData(xlsx, sheetName); err != nil {
+				return nil, err
+			} else if len(data.Columns) > 0 && len(data.Datas) > 0 {
+				rtnDatas = append(rtnDatas, data)
+			}
+		}
+	}
+	return rtnDatas, nil
+}
+func (s *ExcelSv) GetExcelData(filePath string) (data ImportData, err error) {
+	xlsx, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return data, err
+	}
+	return s.getSheetData(xlsx, xlsx.GetSheetName(xlsx.GetActiveSheetIndex()))
+}
+func (s *ExcelSv) getSheetData(xlsx *excelize.File, sheetName string) (ImportData, error) {
+	importData := ImportData{Columns: make(map[string]string), Name: sheetName}
+	dataFromRow := 2
 	//第一行为字段标识
 	//条二行为行名称
 	// 获取 Sheet1 上所有单元格,模板，需要预制一个列标识，_state,为空后，后边的行将都不会导入
-	sheetName := ""
-	for _, v := range xlsx.GetSheetMap() {
-		sheetName = v
-		break
-	}
 	if sheetName == "" {
-		return nil, nil
+		return importData, nil
 	}
 	allRows := xlsx.GetRows(sheetName)
 	if len(allRows) <= dataFromRow {
-		return nil, nil
+		return importData, nil
 	}
-
-	importData := ImportData{Columns: make(map[string]string)}
 	//取列数
 	colsMap := make(map[int]string)
 	cols := allRows[0]
@@ -155,7 +178,7 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 		}
 	}
 	if len(colsMap) == 0 {
-		return nil, nil
+		return importData, nil
 	}
 	dataRows := allRows[dataFromRow:]
 
@@ -183,7 +206,7 @@ func (s *ExcelSv) GetExcelData(filePath string) (*ImportData, error) {
 		}
 	}
 	importData.Datas = datas
-	return &importData, nil
+	return importData, nil
 }
 
 func (s *ExcelSv) ToExcel(data *ToExcel) (*FileData, error) {

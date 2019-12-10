@@ -339,19 +339,29 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 		if relationship.Field.Kind == "belongs_to" || relationship.Field.Kind == "has_one" {
 			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
 			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
-			args := []interface{}{}
+			args := make([]interface{}, 0)
 			condition := ""
+			tag := false
 			if relationship.Field.TypeType == md.TYPE_ENUM {
 				if relationship.Field.Limit != "" {
-					condition = fmt.Sprintf(" and %v.type=?", t.Alia)
+					condition = fmt.Sprintf(" and %v.entity_id=?", t.Alia)
 					args = append(args, relationship.Field.Limit)
+					queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v",
+						t.Entity.TableName, t.Alia, t.Alia, "code", relationship.Entity.Alia, fkey.DbName, condition),
+						args...)
+					tag = true
 				}
+
 			}
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v", t.Entity.TableName, t.Alia, t.Alia, lkey.DBName, relationship.Entity.Alia, fkey.DBName, condition), args...)
+			if !tag {
+				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v",
+					t.Entity.TableName, t.Alia, t.Alia, lkey.DbName, relationship.Entity.Alia, fkey.DbName, condition),
+					args...)
+			}
 		} else if relationship.Field.Kind == "has_many" {
 			fkey := t.Entity.GetField(relationship.Field.ForeignKey)
 			lkey := relationship.Entity.Entity.GetField(relationship.Field.AssociationKey)
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DBName, relationship.Entity.Alia, lkey.DBName))
+			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DbName, relationship.Entity.Alia, lkey.DbName))
 		}
 	}
 	return queryDB
@@ -363,7 +373,7 @@ func (m *exector) parseWhereField(value *qWhere) {
 		parts := strings.Split(strings.TrimSpace(value.Query), " ")
 		field := m.parseField(parts[0])
 		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName)
+			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
 		}
 		value.Expr = strings.Join(parts, " ")
 	}
@@ -397,7 +407,7 @@ func (m *exector) parseSelectField(value *oqlSelect) {
 		}
 		field := m.parseField(parts[0])
 		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName)
+			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
 		}
 		strs = append(strs, strings.Join(parts, " "))
 	}
@@ -410,7 +420,7 @@ func (m *exector) parseGroupField(value *oqlGroup) {
 	for _, item := range items {
 		field := m.parseField(strings.TrimSpace(item))
 		if field != nil {
-			strs = append(strs, fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName))
+			strs = append(strs, fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
 		} else {
 			strs = append(strs, item)
 		}
@@ -424,7 +434,7 @@ func (m *exector) parseOrderField(value *oqlOrder) {
 		parts := strings.Split(strings.TrimSpace(item), " ")
 		field := m.parseField(parts[0])
 		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DBName)
+			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
 		}
 		strs = append(strs, strings.Join(parts, " "))
 	}

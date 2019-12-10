@@ -7,25 +7,42 @@ import (
 
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
-	"github.com/ggoop/goutils/utils"
-
 	"github.com/ggoop/goutils/repositories"
 )
 
-const STATE_TEMP = "temp"
-const STATE_CREATED = "created"
-const STATE_UPDATED = "updated"
-const STATE_DELETED = "deleted"
-const STATE_NORMAL = "normal"
-
-const TYPE_ENTITY = "entity"
-const TYPE_ENUM = "enum"
+const (
+	//临时
+	STATE_TEMP = "temp"
+	//创建的
+	STATE_CREATED = "created"
+	//更新的
+	STATE_UPDATED = "updated"
+	//删除的
+	STATE_DELETED = "deleted"
+	//正常的
+	STATE_NORMAL = "normal"
+)
+const (
+	//简单类型
+	TYPE_SIMPLE = "simple"
+	//实体
+	TYPE_ENTITY = "entity"
+	// 枚举
+	TYPE_ENUM = "enum"
+	// 接口
+	TYPE_INTERFACE = "interface"
+	// 对象
+	TYPE_DTO = "dto"
+	// 视图
+	TYPE_VIEW = "view"
+)
 
 type MD interface {
 	MD() *Mder
 }
 type Mder struct {
 	ID     string
+	Type   string
 	Name   string
 	Domain string
 }
@@ -53,13 +70,12 @@ func GetEntity(id string) *MDEntity {
 	}
 	item := &MDEntity{}
 	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
-		db.Preload("Fields").Take(item, "id=? or code=? or table_name=?", id, id, id)
+		db.Preload("Fields").Take(item, "id=?", id)
 	}); err != nil {
 		glog.Errorf("di Provide error:%s", err)
 	}
 	if item.ID != "" {
 		mdCache[strings.ToLower(item.ID)] = item
-		mdCache[strings.ToLower(item.Code)] = item
 		if item.TableName != "" {
 			mdCache[strings.ToLower(item.TableName)] = item
 		}
@@ -84,7 +100,8 @@ func (m *md) GetEntity() *MDEntity {
 		return nil
 	}
 	item := MDEntity{}
-	if err := m.db.Model(item).Preload("Fields").Take(&item, "id=?", mdInfo.ID).Error; err == nil {
+	query := m.db.Model(item).Preload("Fields").Where("id=?", mdInfo.ID)
+	if err := query.Take(&item).Error; err == nil {
 		return &item
 	}
 	return nil
@@ -94,12 +111,18 @@ func (m *md) Migrate() {
 	if mdInfo == nil {
 		return
 	}
+	if mdInfo.ID == "" {
+		glog.Error("元数据ID为空", glog.String("Name", mdInfo.Name))
+		return
+	}
 	scope := m.db.NewScope(m.Value)
 
 	entity := m.GetEntity()
 	vt := reflect.ValueOf(m.Value).Elem().Type()
-	newEntity := &MDEntity{TableName: scope.TableName(), Code: vt.Name(), Name: mdInfo.Name, Domain: mdInfo.Domain}
-	newEntity.FullName = vt.String()
+	newEntity := &MDEntity{TableName: scope.TableName(), Name: mdInfo.Name, Domain: mdInfo.Domain, Code: vt.Name(), Type: mdInfo.Type}
+	if newEntity.Type == "" {
+		newEntity.Type = TYPE_ENTITY
+	}
 	if entity == nil {
 		entity = newEntity
 		entity.ID = mdInfo.ID
@@ -110,29 +133,30 @@ func (m *md) Migrate() {
 		if entity.Name != newEntity.Name {
 			updates["Name"] = newEntity.Name
 		}
-		if entity.TableName != newEntity.TableName {
-			updates["TableName"] = newEntity.TableName
-		}
 		if entity.Code != newEntity.Code {
 			updates["Code"] = newEntity.Code
 		}
-		if entity.FullName != newEntity.FullName {
-			updates["FullName"] = newEntity.FullName
+		if entity.Type != newEntity.Type {
+			updates["Type"] = newEntity.Type
+		}
+		if entity.TableName != newEntity.TableName {
+			updates["TableName"] = newEntity.TableName
 		}
 		if entity.Domain != newEntity.Domain {
 			updates["Domain"] = newEntity.Domain
 		}
 		if len(updates) > 0 {
-			m.db.Model(entity).Updates(updates)
+			m.db.Model(entity).Where("id=?", entity.ID).Updates(updates)
 			entity = m.GetEntity()
 		}
 	}
 	codes := make([]string, 0)
 	for _, field := range scope.GetModelStruct().StructFields {
-		newField := MDField{Code: field.Name, DBName: field.DBName, IsPrimaryKey: field.IsPrimaryKey, IsNormal: field.IsNormal, Name: field.TagSettings["NAME"], EntityID: entity.ID}
+		newField := MDField{Code: field.Name, DbName: field.DBName, IsPrimaryKey: field.IsPrimaryKey, IsNormal: field.IsNormal, Name: field.TagSettings["NAME"], EntityID: entity.ID}
 		if field.IsIgnored {
 			continue
 		}
+
 		if newField.Name == "" {
 			newField.Name = newField.Code
 		}
@@ -146,6 +170,7 @@ func (m *md) Migrate() {
 		if reflectType.Kind() == reflect.Ptr {
 			reflectType = reflectType.Elem()
 		}
+		newField.Limit = field.TagSettings["LIMIT"]
 		if relationship := field.Relationship; relationship != nil {
 			newField.Kind = relationship.Kind
 			newField.ForeignKey = strings.Join(relationship.ForeignFieldNames, ".")
@@ -155,31 +180,27 @@ func (m *md) Migrate() {
 			if e, ok := fieldValue.Interface().(MD); ok {
 				if eMd := e.MD(); eMd != nil {
 					newField.TypeID = eMd.ID
+					newField.TypeType = eMd.Type
 				}
 			}
 		}
-		newField.Limit = field.TagSettings["LIMIT"]
-		if newField.TypeID == "01e9125fe9611c4dc8d47427ea1d5200" || reflectType.Name() == "MDEnum" {
-			newField.TypeType = TYPE_ENUM
-		} else if newField.TypeID != "" {
-			newField.TypeType = TYPE_ENTITY
-		} else {
-			newField.TypeType = reflectType.Name()
+		if newField.TypeID != "" && newField.TypeType == "" {
+			if typeEntity := GetEntity(newField.TypeID); typeEntity != nil {
+				newField.TypeType = typeEntity.Type
+			}
 		}
 		codes = append(codes, newField.Code)
 		oldField := entity.GetField(newField.Code)
 
 		if oldField == nil {
-			//新增加
-			newField.ID = utils.GUID()
 			m.db.Create(&newField)
 		} else {
 			updates := make(map[string]interface{})
 			if oldField.Name != newField.Name {
 				updates["Name"] = newField.Name
 			}
-			if oldField.DBName != newField.DBName {
-				updates["DBName"] = newField.DBName
+			if oldField.DbName != newField.DbName {
+				updates["DbName"] = newField.DbName
 			}
 			if oldField.AssociationKey != newField.AssociationKey {
 				updates["AssociationKey"] = newField.AssociationKey
@@ -221,13 +242,17 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	if !initMD {
 		initMD = true
 		mds := []interface{}{
-			&MDEntity{}, &MDField{}, &MDEnumType{}, &MDEnum{},
+			&MDEntity{}, &MDField{}, &MDTag{}, &MDEnum{},
+			&MDActionCommand{}, &MDActionRule{}, &MDActionMaker{},
+			&MDPage{}, &MDPageView{}, &MDPageWidget{},
+			&MDPart{}, &MDPartProps{},
 		}
 		db.AutoMigrate(mds...)
 		for _, v := range mds {
 			m := newMd(v, db)
 			m.Migrate()
 		}
+		initData(db)
 	}
 	for _, value := range values {
 		m := newMd(value, db)
@@ -236,7 +261,6 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	//表迁移
 	db.AutoMigrate(values...)
 }
-
 func QuotedBy(m MD, ids []string, excludes ...MD) ([]MDEntity, []string) {
 	if m == nil || ids == nil || len(ids) == 0 {
 		return nil, nil
@@ -277,10 +301,9 @@ func QuotedBy(m MD, ids []string, excludes ...MD) ([]MDEntity, []string) {
 				if field == nil {
 					continue
 				}
-				repo.Table(fmt.Sprintf("%v as t", entity.TableName)).Where(fmt.Sprintf("%v in (?)", field.DBName), ids).Count(&count)
+				repo.Table(fmt.Sprintf("%v as t", entity.TableName)).Where(fmt.Sprintf("%v in (?)", field.DbName), ids).Count(&count)
 				if count > 0 {
-					item := MDEntity{TypeID: entity.TypeID, Code: entity.Code, Name: entity.Name, FullName: entity.FullName, TableName: entity.TableName}
-					item.ID = entity.ID
+					item := MDEntity{ID: entity.ID, Type: entity.Type, Name: entity.Name, TableName: entity.TableName}
 					rtns = append(rtns, item)
 				}
 			}

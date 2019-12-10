@@ -12,7 +12,7 @@ import (
 )
 
 type QueryCase struct {
-	md.ModelUnscoped
+	md.Model
 	EntID     string           `gorm:"size:50" json:"ent_id"`
 	UserID    string           `gorm:"size:50" json:"user_id"`
 	QueryID   string           `gorm:"size:50;name:查询" json:"query_id"`
@@ -31,7 +31,7 @@ type QueryCase struct {
 }
 
 func (s *QueryCase) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fbb092f44be8cec4b7174de", Name: "查询方案"}
+	return &md.Mder{ID: "query.case", Name: "查询方案"}
 }
 func (s *QueryCase) Format() *QueryCase {
 	if s.Query == nil && s.QueryID != "" {

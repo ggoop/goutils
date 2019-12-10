@@ -2,20 +2,20 @@ package main
 
 import (
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/md"
+	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
 )
 
 func main() {
-	//glog.SetPath(utils.JoinCurrentPath(configs.Default.Log.Path))
-	//glog.AddLogFile(utils.JoinCurrentPath(configs.Default.Log.Path))
-
 	for i := 0; i < 10; i++ {
 		glog.Info(utils.GUID())
 	}
-	//glog.Error(utils.GetIpAddrs())
 
-	test_query()
+	//test_query()
 }
 func test_query() {
+	md.Migrate(repositories.NewMysqlRepo(), &md.MDEntity{})
 	glog.Error(utils.GetIpAddrs())
+
 }

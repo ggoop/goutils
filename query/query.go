@@ -7,7 +7,7 @@ import (
 const md_domain string = "query"
 
 type Query struct {
-	md.ModelUnscoped
+	md.Model
 	ScopeID     string        `gorm:"size:50;name:范围" json:"scope_id"`
 	ScopeType   string        `gorm:"size:50;name:范围" json:"scope_type"`
 	Code        string        `gorm:"size:50;name:编码" json:"code"`
@@ -24,11 +24,11 @@ type Query struct {
 }
 
 func (s *Query) MD() *md.Mder {
-	return &md.Mder{ID: "01e8f3067a691a50b46b697fa9f73d01", Domain: md_domain, Name: "查询"}
+	return &md.Mder{ID: "query.query", Domain: md_domain, Name: "查询"}
 }
 
 type QueryField struct {
-	md.ModelUnscoped
+	md.Model
 	QueryID      string `gorm:"size:50;name:查询ID" json:"query_id"`
 	Query        *Query `gorm:"name:查询" json:"case_id"`
 	DataType     string `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
@@ -45,11 +45,11 @@ type QueryField struct {
 }
 
 func (s *QueryField) MD() *md.Mder {
-	return &md.Mder{ID: "01e8f30683641760aa9261a2b248c5f0", Domain: md_domain, Name: "查询字段"}
+	return &md.Mder{ID: "query.field", Domain: md_domain, Name: "查询字段"}
 }
 
 type QueryColumn struct {
-	md.ModelUnscoped
+	md.Model
 	OwnerID   string `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType string `gorm:"size:50;name:所属类型" json:"owner_type"`
 	Field     string `gorm:"size:50;name:字段" json:"field"`
@@ -62,11 +62,11 @@ type QueryColumn struct {
 }
 
 func (s *QueryColumn) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fb0b00455b78cec4b7174de", Domain: md_domain, Name: "查询栏目"}
+	return &md.Mder{ID: "query.column", Domain: md_domain, Name: "查询栏目"}
 }
 
 type QueryOrder struct {
-	md.ModelUnscoped
+	md.Model
 	OwnerID   string `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType string `gorm:"size:50;name:所属类型" json:"owner_type"`
 	Field     string `gorm:"size:50;name:字段"  json:"field"`
@@ -78,11 +78,11 @@ type QueryOrder struct {
 }
 
 func (s *QueryOrder) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fa5e1f4c3118cec4b7174de", Domain: md_domain, Name: "查询排序"}
+	return &md.Mder{ID: "query.order", Domain: md_domain, Name: "查询排序"}
 }
 
 type QueryWhere struct {
-	md.ModelUnscoped
+	md.Model
 	OwnerID    string       `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType  string       `gorm:"size:50;name:所属类型" json:"owner_type"`
 	ParentID   string       `gorm:"size:50" json:"parent_id"`
@@ -100,5 +100,5 @@ type QueryWhere struct {
 }
 
 func (s *QueryWhere) MD() *md.Mder {
-	return &md.Mder{ID: "01e916da3fb51af46f288cec4b7174de", Domain: md_domain, Name: "查询条件"}
+	return &md.Mder{ID: "query.where", Domain: md_domain, Name: "查询条件"}
 }

@@ -8,6 +8,8 @@ import (
 
 	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/utils"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )
@@ -38,7 +40,23 @@ func NewMysqlRepo() *MysqlRepo {
 	}
 
 	db.LogMode(configs.Default.App.Debug)
-	return &MysqlRepo{db}
+	return createMysqlRepo(db)
+}
+func updateIDForCreateCallback(scope *gorm.Scope) {
+	if !scope.HasError() {
+		if field, ok := scope.FieldByName("ID"); ok {
+			if field.IsBlank && !field.IsIgnored {
+				if field.Field.Type().Kind() == reflect.String {
+					field.Set(utils.GUID())
+				}
+			}
+		}
+	}
+}
+func createMysqlRepo(db *gorm.DB) *MysqlRepo {
+	repo := &MysqlRepo{db}
+	repo.Callback().Create().Before("gorm:create").Register("md:update_id", updateIDForCreateCallback)
+	return repo
 }
 func DestroyDB(name string) error {
 	config := mysql.Config{User: configs.Default.Db.Username, Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host, AllowNativePasswords: true, ParseTime: true}
@@ -70,12 +88,12 @@ func CreateDB(name string) {
 
 // Begin begin a transaction
 func (s *MysqlRepo) Begin() *MysqlRepo {
-	return &MysqlRepo{s.DB.Begin()}
+	return createMysqlRepo(s.DB.Begin())
 }
 
 // New clone a new db connection without search conditions
 func (s *MysqlRepo) New() *MysqlRepo {
-	return &MysqlRepo{s.DB.New()}
+	return createMysqlRepo(s.DB.New())
 }
 func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	if len(objArr) == 0 {
@@ -90,9 +108,16 @@ func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 	quoted := make([]string, 0, len(mainFields))
 	for i := range mainFields {
 		mainField := mainFields[i]
-		if (mainField.IsPrimaryKey && mainField.IsBlank) || (mainField.IsIgnored) || (mainField.Relationship != nil) ||
+		if (mainField.IsIgnored) || (mainField.Relationship != nil) ||
 			(mainField.Field.Kind() == reflect.Slice && mainField.Field.Type().Elem().Kind() == reflect.Struct) {
 			continue
+		}
+		if mainField.IsPrimaryKey && mainField.IsBlank {
+			if (mainField.Name == "ID" && mainField.Field.Type().Kind() == reflect.String) {
+
+			} else {
+				continue
+			}
 		}
 		quoted = append(quoted, mainScope.Quote(mainFields[i].DBName))
 	}
@@ -111,6 +136,11 @@ func (s *MysqlRepo) BatchInsert(objArr []interface{}) error {
 			}
 			if field.Name == "UpdatedAt" && field.IsBlank {
 				fields[i].Set(time.Now())
+			}
+			if field.IsPrimaryKey && field.IsBlank {
+				if (field.Name == "ID" && field.Field.Type().Kind() == reflect.String) {
+					fields[i].Set(utils.GUID())
+				}
 			}
 
 			if (field.IsPrimaryKey && field.IsBlank) || (field.IsIgnored) || (field.Relationship != nil) ||
