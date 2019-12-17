@@ -70,6 +70,9 @@ func ToError(err interface{}, code ...int) Result {
 	if code != nil && len(code) > 1 {
 		dataCode = code[1]
 	}
+	if httpCode <= 100 || httpCode > 1000 {
+		httpCode = iris.StatusBadRequest
+	}
 	obj["code"] = dataCode
 	res.Code = httpCode
 	res.Object = obj

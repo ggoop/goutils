@@ -9,7 +9,6 @@ const (
 )
 
 type MDEnum struct {
-	ID       string `gorm:"primary_key;size:50" json:"id"`
 	EntityID string `gorm:"size:50;unique_index:uix" json:"entity_id"`
 	Code     string `gorm:"size:50;unique_index:uix" json:"code"`
 	Name     string `gorm:"size:50" json:"name"`

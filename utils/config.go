@@ -16,11 +16,16 @@ import (
 type AppConfig struct {
 	Token   string `mapstructure:"token"`
 	Code    string `mapstructure:"code"`
+	Active  string `mapstructure:"active"`
 	Name    string `mapstructure:"name"`
 	Port    string `mapstructure:"port"`
 	Locale  string `mapstructure:"locale"`
 	Debug   bool   `mapstructure:"debug"`
 	Storage string `mapstructure:"storage"`
+	//注册中心
+	Registry string `mapstructure:"registry"`
+	//服务地址，带端口号
+	Address string `mapstructure:"address"`
 }
 type DbConfig struct {
 	Driver    string `mapstructure:"driver"`
@@ -37,6 +42,12 @@ type LogConfig struct {
 	Path  string `mapstructure:"path"`
 	Stack bool   `mapstructure:"stack"`
 }
+type AuthConfig struct {
+	//权限中心地址
+	Address string `mapstructure:"address"`
+	//权限中心编码
+	Code string `mapstructure:"code"`
+}
 
 const appConfigName = "app"
 
@@ -44,6 +55,7 @@ type Config struct {
 	App  AppConfig
 	Db   DbConfig
 	Log  LogConfig
+	Auth AuthConfig
 	data map[string]interface{}
 }
 
@@ -174,13 +186,16 @@ func NewInitConfig() {
 	if DefaultConfig.Db.Collation == "" {
 		DefaultConfig.Db.Collation = "utf8mb4_general_ci"
 	}
+	if DefaultConfig.Auth.Code == "" {
+		DefaultConfig.Auth.Code = DefaultConfig.App.Code
+	}
 	kvs := make(map[string]interface{})
 	if err := viper.Unmarshal(&kvs); err != nil {
 		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
 	}
 	if len(kvs) > 0 {
 		for k, v := range kvs {
-			if k == "app" || k == "db" || k == "log" {
+			if k == "app" || k == "db" || k == "log" || k == "auth" {
 				continue
 			}
 			DefaultConfig.SetValue(k, v)
