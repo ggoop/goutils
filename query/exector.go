@@ -10,7 +10,7 @@ import (
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
-	"github.com/jinzhu/gorm"
+	"github.com/ggoop/goutils/gorm"
 	"github.com/shopspring/decimal"
 )
 
@@ -142,10 +142,11 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 		q = q.Limit(m.pageSize).Offset((m.page - 1) * m.pageSize)
 	}
 	rows, err := q.Rows()
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	columns, _ := rows.Columns()
 	columnTypes, _ := rows.ColumnTypes()
 	columnTypeMap := map[string]string{}
@@ -347,7 +348,7 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 					condition = fmt.Sprintf(" and %v.entity_id=?", t.Alia)
 					args = append(args, relationship.Field.Limit)
 					queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v",
-						t.Entity.TableName, t.Alia, t.Alia, "code", relationship.Entity.Alia, fkey.DbName, condition),
+						t.Entity.TableName, t.Alia, t.Alia, "id", relationship.Entity.Alia, fkey.DbName, condition),
 						args...)
 					tag = true
 				}

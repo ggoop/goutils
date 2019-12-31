@@ -2,8 +2,13 @@ package md
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/ggoop/goutils/gorm"
 
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
@@ -53,36 +58,6 @@ type md struct {
 }
 
 var initMD bool
-var mdCache map[string]*MDEntity
-
-func GetEntity(id string) *MDEntity {
-	defer func() {
-		if err := recover(); err != nil {
-			glog.Error(err)
-		}
-	}()
-	if mdCache == nil {
-		mdCache = make(map[string]*MDEntity)
-	}
-	id = strings.ToLower(id)
-	if v, ok := mdCache[id]; ok {
-		return v
-	}
-	item := &MDEntity{}
-	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
-		db.Preload("Fields").Take(item, "id=?", id)
-	}); err != nil {
-		glog.Errorf("di Provide error:%s", err)
-	}
-	if item.ID != "" {
-		mdCache[strings.ToLower(item.ID)] = item
-		if item.TableName != "" {
-			mdCache[strings.ToLower(item.TableName)] = item
-		}
-		return item
-	}
-	return nil
-}
 
 func newMd(value interface{}, db *repositories.MysqlRepo) *md {
 	item := md{Value: value, db: db}
@@ -101,11 +76,67 @@ func (m *md) GetEntity() *MDEntity {
 	}
 	item := MDEntity{}
 	query := m.db.Model(item).Preload("Fields").Where("id=?", mdInfo.ID)
-	if err := query.Take(&item).Error; err == nil {
+	if err := query.Take(&item).Error; err != nil {
+		glog.Error(err)
+	} else {
 		return &item
 	}
 	return nil
 }
+
+// Get Data Type for MySQL Dialect
+func (s *md) dataTypeOf(field *gorm.StructField) string {
+	size := 0
+	if num, ok := field.TagSettingsGet("SIZE"); ok {
+		size, _ = strconv.Atoi(num)
+	} else {
+		size = 255
+	}
+	var (
+		reflectType = field.Struct.Type
+	)
+
+	for reflectType.Kind() == reflect.Ptr {
+		reflectType = reflectType.Elem()
+	}
+	fieldValue := reflect.Indirect(reflect.New(reflectType))
+	sqlType := ""
+
+	if sqlType == "" {
+		switch fieldValue.Kind() {
+		case reflect.Bool:
+			sqlType = "boolean"
+		case reflect.Int8:
+		case reflect.Uint8:
+		case reflect.Int, reflect.Int16, reflect.Int32:
+		case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uintptr:
+		case reflect.Int64:
+		case reflect.Uint64:
+			sqlType = "int"
+		case reflect.Float32, reflect.Float64:
+			sqlType = "decimal"
+		case reflect.String:
+			if size > 100 {
+
+			}
+			sqlType = "string"
+		case reflect.Struct:
+			if _, ok := fieldValue.Interface().(time.Time); ok {
+				sqlType = "datetime"
+			}
+			if _, ok := fieldValue.Interface().(Time); ok {
+				sqlType = "datetime"
+			}
+			if _, ok := fieldValue.Interface().(decimal.Decimal); ok {
+				sqlType = "decimal"
+			}
+		default:
+			sqlType = "string"
+		}
+	}
+	return sqlType
+}
+
 func (m *md) Migrate() {
 	mdInfo := m.GetMder()
 	if mdInfo == nil {
@@ -183,6 +214,16 @@ func (m *md) Migrate() {
 					newField.TypeType = eMd.Type
 				}
 			}
+		} else {
+			fieldValue := reflect.New(reflectType)
+			if e, ok := fieldValue.Interface().(MD); ok {
+				if eMd := e.MD(); eMd != nil {
+					newField.TypeID = eMd.ID
+					newField.TypeType = eMd.Type
+				}
+			} else if e := m.dataTypeOf(field); e != "" {
+				newField.TypeID = e
+			}
 		}
 		if newField.TypeID != "" && newField.TypeType == "" {
 			if typeEntity := GetEntity(newField.TypeID); typeEntity != nil {
@@ -247,19 +288,35 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 			&MDPage{}, &MDPageView{}, &MDPageWidget{},
 			&MDPart{}, &MDPartProps{},
 		}
-		db.AutoMigrate(mds...)
+		needDb := make([]interface{}, 0)
+		for _, v := range mds {
+			m := newMd(v, db)
+			if dd := m.GetMder(); dd == nil || dd.Type == TYPE_ENTITY || dd.Type == TYPE_ENUM || dd.Type == "" {
+				needDb = append(needDb, v)
+			}
+		}
+		db.AutoMigrate(needDb...)
+
 		for _, v := range mds {
 			m := newMd(v, db)
 			m.Migrate()
 		}
+
 		initData(db)
 	}
-	for _, value := range values {
-		m := newMd(value, db)
-		m.Migrate()
+	if len(values) > 0 {
+		needDb := make([]interface{}, 0)
+		for _, v := range values {
+			m := newMd(v, db)
+			if dd := m.GetMder(); dd == nil || dd.Type == TYPE_ENTITY || dd.Type == TYPE_ENUM || dd.Type == "" {
+				needDb = append(needDb, v)
+			}
+			m.Migrate()
+		}
+		//表迁移
+		db.AutoMigrate(needDb...)
 	}
-	//表迁移
-	db.AutoMigrate(values...)
+
 }
 func QuotedBy(m MD, ids []string, excludes ...MD) ([]MDEntity, []string) {
 	if m == nil || ids == nil || len(ids) == 0 {

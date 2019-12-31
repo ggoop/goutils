@@ -2,25 +2,15 @@ package md
 
 import (
 	"strings"
+
+	"github.com/ggoop/goutils/di"
+	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/repositories"
 )
 
 const (
 	md_domain string = "md"
 )
-
-type MDEnum struct {
-	EntityID string `gorm:"size:50;unique_index:uix" json:"entity_id"`
-	Code     string `gorm:"size:50;unique_index:uix" json:"code"`
-	Name     string `gorm:"size:50" json:"name"`
-	Sequence int    `json:"sequence"`
-}
-
-func (t MDEnum) TableName() string {
-	return "md_fields"
-}
-func (s *MDEnum) MD() *Mder {
-	return &Mder{ID: "md.enum", Domain: md_domain, Name: "枚举", Type: TYPE_ENUM}
-}
 
 type MDEntity struct {
 	ID        string `gorm:"primary_key;size:50" json:"id"`
@@ -101,4 +91,35 @@ type MDField struct {
 
 func (s *MDField) MD() *Mder {
 	return &Mder{ID: "md.field", Domain: md_domain, Name: "属性"}
+}
+
+var mdCache map[string]*MDEntity
+
+func GetEntity(id string) *MDEntity {
+	defer func() {
+		if err := recover(); err != nil {
+			glog.Error(err)
+		}
+	}()
+	if mdCache == nil {
+		mdCache = make(map[string]*MDEntity)
+	}
+	id = strings.ToLower(id)
+	if v, ok := mdCache[id]; ok {
+		return v
+	}
+	item := &MDEntity{}
+	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
+		db.Preload("Fields").Take(item, "id=?", id)
+	}); err != nil {
+		glog.Errorf("di Provide error:%s", err)
+	}
+	if item.ID != "" {
+		mdCache[strings.ToLower(item.ID)] = item
+		if item.TableName != "" {
+			mdCache[strings.ToLower(item.TableName)] = item
+		}
+		return item
+	}
+	return nil
 }

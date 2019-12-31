@@ -44,7 +44,24 @@ func (m *tokenMiddlewareHandle) Handle(ctx iris.Context) {
 			ctx.Values().Set(context.DefaultContextKey, uc)
 			ctx.SetCookieKV(context.AuthSessionKey, uc.ToTokenString())
 		}
-
+	}
+	if tokenCode := ctx.GetHeader("token"); tokenCode != "" && uc == nil {
+		if uc, err = GetTokenContext(tokenCode); err != nil {
+			glog.Error(err)
+		} else if uc != nil {
+			uc.SetID(utils.GUID())
+			ctx.Values().Set(context.DefaultContextKey, uc)
+			ctx.SetCookieKV(context.AuthSessionKey, uc.ToTokenString())
+		}
+	}
+	if tokenCode := ctx.GetCookie("token"); tokenCode != "" && uc == nil {
+		if uc, err = GetTokenContext(tokenCode); err != nil {
+			glog.Error(err)
+		} else if uc != nil {
+			uc.SetID(utils.GUID())
+			ctx.Values().Set(context.DefaultContextKey, uc)
+			ctx.SetCookieKV(context.AuthSessionKey, uc.ToTokenString())
+		}
 	}
 	ctx.Next()
 

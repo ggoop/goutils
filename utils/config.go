@@ -133,21 +133,29 @@ func (s *Config) SetValue(name string, value interface{}) *Config {
 
 var DefaultConfig *Config
 
-func NewInitConfig() {
+func createEnvFile() {
 	appFile := JoinCurrentPath("env/app.yaml")
-	//不存在时，自动由dev创建
-	if !PathExists(appFile) {
-		devFile := JoinCurrentPath("env/app.yaml.dev")
-		if PathExists(devFile) {
-			if s, err := os.Open(devFile); err == nil {
-				defer s.Close()
-				if newEnv, err := os.Create(appFile); err == nil {
-					defer newEnv.Close()
-					io.Copy(newEnv, s)
+	paths := []string{"env/app.prod.yaml", "env/app.dev.yaml"}
+	for _, p := range paths {
+		//不存在时，自动由dev创建
+		if !PathExists(appFile) {
+			devFile := JoinCurrentPath(p)
+			if PathExists(devFile) {
+				if s, err := os.Open(devFile); err == nil {
+					defer s.Close()
+					if newEnv, err := os.Create(appFile); err == nil {
+						defer newEnv.Close()
+						io.Copy(newEnv, s)
+						break
+					}
 				}
 			}
 		}
 	}
+}
+func NewInitConfig() {
+	createEnvFile()
+
 	DefaultConfig = &Config{}
 	viper.SetConfigType("yaml")
 
@@ -178,7 +186,12 @@ func NewInitConfig() {
 		DefaultConfig.Db.Host = "localhost"
 	}
 	if DefaultConfig.Db.Port == "" {
-		DefaultConfig.Db.Port = "3306"
+		if DefaultConfig.Db.Driver == "mysql" {
+			DefaultConfig.Db.Port = "3306"
+		}
+		if DefaultConfig.Db.Driver == "mssql" {
+			DefaultConfig.Db.Port = "1433"
+		}
 	}
 	if DefaultConfig.Db.Charset == "" {
 		DefaultConfig.Db.Charset = "utf8mb4"

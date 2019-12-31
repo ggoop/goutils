@@ -6,8 +6,11 @@ app:
     port: 3003    
     debug: true
 db:
+    # mysql,mssql
     driver: mysql
+    # localhost
     host: localhost
+    # 3306,1433
     port: 3306
     database: goutils
     username: root
