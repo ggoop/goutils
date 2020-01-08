@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -49,7 +48,7 @@ type AuthConfig struct {
 	Code string `mapstructure:"code"`
 }
 
-const appConfigName = "app"
+const AppConfigName = "app"
 
 type Config struct {
 	App  AppConfig
@@ -93,18 +92,7 @@ func (s *Config) GetValue(name string) string {
 	return ""
 }
 func (s *Config) UnmarshalValue(name string, rawVal interface{}) error {
-	ov := s.GetObject(name)
-	if ov == nil {
-		return nil
-	}
-	if b, err := json.Marshal(ov); err != nil {
-		return err
-	} else {
-		if err := json.Unmarshal(b, rawVal); err != nil {
-			return err
-		}
-	}
-	return nil
+	return viper.UnmarshalKey(name, rawVal)
 }
 
 func (s *Config) GetBool(name string) bool {
@@ -159,13 +147,13 @@ func NewInitConfig() {
 	DefaultConfig = &Config{}
 	viper.SetConfigType("yaml")
 
-	viper.SetConfigName(appConfigName)
+	viper.SetConfigName(AppConfigName)
 	viper.AddConfigPath(JoinCurrentPath("env"))
 	if err := viper.ReadInConfig(); err != nil {
-		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
+		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
 	}
 	if err := viper.Unmarshal(&DefaultConfig); err != nil {
-		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
+		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
 	}
 	if DefaultConfig.App.Port == "" {
 		DefaultConfig.App.Port = "8080"
@@ -204,13 +192,10 @@ func NewInitConfig() {
 	}
 	kvs := make(map[string]interface{})
 	if err := viper.Unmarshal(&kvs); err != nil {
-		glog.Errorf("Fatal error when reading %s config file:%s", appConfigName, err)
+		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
 	}
 	if len(kvs) > 0 {
 		for k, v := range kvs {
-			if k == "app" || k == "db" || k == "log" || k == "auth" {
-				continue
-			}
 			DefaultConfig.SetValue(k, v)
 		}
 	}
