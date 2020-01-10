@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/ggoop/goutils/glog"
 )
 
 // Field model field definition
@@ -54,6 +56,7 @@ func (field *Field) Set(value interface{}) (err error) {
 					err = scanner.Scan(v)
 				}
 			} else {
+				glog.Error(fieldValue.Addr().Interface())
 				err = fmt.Errorf("could not convert argument of field %s from %s to %s", field.Name, reflectValue.Type(), fieldValue.Type())
 			}
 		}

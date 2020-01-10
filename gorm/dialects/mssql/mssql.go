@@ -173,7 +173,8 @@ func parseInt(value interface{}) (int64, error) {
 	return strconv.ParseInt(fmt.Sprint(value), 0, 0)
 }
 
-func (mssql) LimitAndOffsetSQL(limit, offset interface{}) (sql string, err error) {
+func (s mssql) LimitAndOffsetSQL(limit, offset interface{}) (sql string, err error) {
+
 	if offset != nil {
 		if parsedOffset, err := parseInt(offset); err != nil {
 			return "", err

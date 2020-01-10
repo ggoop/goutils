@@ -14,20 +14,18 @@ func main() {
 	//test_query()
 }
 func test_query() {
-	mysql:=repositories.NewMysqlRepo()
-	md.Migrate(mysql, &TestTag{})
+	mysql := repositories.NewMysqlRepo()
+	md.Migrate(mysql, &testTag{})
+	items := make([]interface{}, 0)
+	item := &testTag{ID: utils.GUID(), TypeID: "dd"}
 
-items:=make([]interface{},0)
-item:=TestTag{ID:utils.GUID(),TypeID:"dd"}
-
-	item.CreatedAt=md.NewTime()
-	items = append(items, item)
-	//mysql.Create(item)
-	mysql.BatchInsert(items)
+	items = append(items, &item)
+	mysql.Create(&item)
+	//mysql.BatchInsert(items)
 
 }
 
-type TestTag struct {
+type testTag struct {
 	ID        string     `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt md.Time    `gorm:"name:创建时间" json:"created_at"`
 	UpdatedAt *md.Time   `gorm:"name:更新时间" json:"updated_at"`
@@ -37,6 +35,6 @@ type TestTag struct {
 	ParentID  string     `gorm:"size:50;name:父模型" json:"parent_id"`
 }
 
-func (s *TestTag) MD() *md.Mder {
+func (s *testTag) MD() *md.Mder {
 	return &md.Mder{ID: "test.tag", Domain: "test", Name: "标签"}
 }

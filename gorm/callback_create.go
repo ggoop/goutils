@@ -2,7 +2,10 @@ package gorm
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 // Define callbacks for creating
@@ -42,6 +45,13 @@ func updateTimeStampForCreateCallback(scope *Scope) {
 		if updatedAtField, ok := scope.FieldByName("UpdatedAt"); ok {
 			if updatedAtField.IsBlank {
 				updatedAtField.Set(now)
+			}
+		}
+		if field, ok := scope.FieldByName("ID"); ok {
+			if field.IsBlank && !field.IsIgnored {
+				if field.Field.Type().Kind() == reflect.String {
+					field.Set(utils.GUID())
+				}
 			}
 		}
 	}
