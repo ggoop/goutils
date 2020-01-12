@@ -346,8 +346,8 @@ func (scope *Scope) CombinedConditionSql() string {
 	if scope.Search.raw {
 		whereSQL = strings.TrimSuffix(strings.TrimPrefix(whereSQL, "WHERE ("), ")")
 	}
-	return joinSQL + whereSQL + scope.groupSQL() +
-		scope.havingSQL() + scope.orderSQL() + scope.limitAndOffsetSQL()
+	return joinSQL + whereSQL + scope.GroupSQL() +
+		scope.havingSQL() + scope.OrderSQL() + scope.limitAndOffsetSQL()
 }
 
 // Raw set raw sql
@@ -776,7 +776,7 @@ func (scope *Scope) selectSQL() string {
 	return scope.buildSelectQuery(scope.Search.selects)
 }
 
-func (scope *Scope) orderSQL() string {
+func (scope *Scope) OrderSQL() string {
 	if len(scope.Search.orders) == 0 || scope.Search.ignoreOrderQuery {
 		return ""
 	}
@@ -802,7 +802,7 @@ func (scope *Scope) limitAndOffsetSQL() string {
 	return sql
 }
 
-func (scope *Scope) groupSQL() string {
+func (scope *Scope) GroupSQL() string {
 	if len(scope.Search.group) == 0 {
 		return ""
 	}

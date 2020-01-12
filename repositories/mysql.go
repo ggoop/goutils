@@ -26,6 +26,14 @@ type MysqlRepo struct {
 	*gorm.DB
 }
 
+var _default *MysqlRepo
+
+func Default() *MysqlRepo {
+	if _default == nil {
+		_default = NewMysqlRepo()
+	}
+	return _default
+}
 func NewMysqlRepo() *MysqlRepo {
 	// 生成数据库
 	CreateDB(configs.Default.Db.Database)
@@ -36,7 +44,12 @@ func NewMysqlRepo() *MysqlRepo {
 	}
 
 	db.LogMode(configs.Default.App.Debug)
-	return createMysqlRepo(db)
+	repo := createMysqlRepo(db)
+
+	if _default == nil {
+		_default = repo
+	}
+	return repo
 }
 func getDsnString(inDb bool) string {
 	//[username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]

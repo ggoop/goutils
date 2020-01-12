@@ -76,7 +76,7 @@ func (s *EnumSv) UpdateOrCreate(enum *MDEnum) (*MDEnum, error) {
 	if enum.EntityID == "" {
 		return nil, nil
 	}
-	s.repo.Model(entity).Where("id=?", enum.EntityID).Take(&entity)
+	s.repo.Model(entity).Where("id=?", enum.EntityID).Order("id").Take(&entity)
 	if entity.ID == "" {
 		entity.ID = enum.EntityID
 		entity.Code = enum.EntityID
@@ -87,7 +87,7 @@ func (s *EnumSv) UpdateOrCreate(enum *MDEnum) (*MDEnum, error) {
 	}
 	old := MDEnum{}
 
-	if s.repo.Where("entity_id=? and id=?", enum.EntityID, enum.ID).Take(&old).RecordNotFound() {
+	if s.repo.Where("entity_id=? and id=?", enum.EntityID, enum.ID).Order("id").Take(&old).RecordNotFound() {
 		s.repo.Create(enum)
 	} else {
 		updates := utils.Map{}

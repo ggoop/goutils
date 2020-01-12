@@ -20,7 +20,7 @@ func NewMOFSv(repo *repositories.MysqlRepo) *MOFSv {
 
 func (s *MOFSv) getEntity(entityID string) md.MDEntity {
 	item := md.MDEntity{}
-	s.repo.Model(item).Take(&item, "id=?", entityID)
+	s.repo.Model(item).Order("id").Take(&item, "id=?", entityID)
 	return item
 }
 func (s *MOFSv) EntityToTables(items ...md.MDEntity) error {
@@ -199,7 +199,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 			continue
 		}
 		oldEntity := md.MDEntity{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Order("id").Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.TableName != entity.TableName {
 				datas["TableName"] = entity.TableName
@@ -257,7 +257,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 						field.ForeignKey = "ID"
 					}
 				}
-				if s.repo.Model(oldField).Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
+				if s.repo.Model(oldField).Order("id").Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
 					datas := make(map[string]interface{})
 					if oldField.Name != field.Name {
 						datas["Name"] = field.Name
@@ -337,7 +337,7 @@ func (s *MOFSv) AddActionCommand(items []md.MDActionCommand) error {
 			continue
 		}
 		oldEntity := md.MDActionCommand{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Path != entity.Path {
 				datas["Path"] = entity.Path
@@ -368,7 +368,7 @@ func (s *MOFSv) AddActionRule(items []md.MDActionRule) error {
 			continue
 		}
 		oldEntity := md.MDActionRule{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Content != entity.Content && entity.Content != "" {
 				if entity.Content == "-" {
@@ -404,7 +404,7 @@ func (s *MOFSv) AddActionMaker(items []md.MDActionMaker) error {
 			continue
 		}
 		oldEntity := md.MDActionMaker{}
-		if s.repo.Model(oldEntity).Where("maker_id=? and maker_type=? and command_id=? and rule_id=?", entity.MakerID, entity.MakerType, entity.CommandID, entity.RuleID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Order("id").Where("maker_id=? and maker_type=? and command_id=? and rule_id=?", entity.MakerID, entity.MakerType, entity.CommandID, entity.RuleID).Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Group != entity.Group {
 				datas["Group"] = entity.Group
@@ -429,7 +429,7 @@ func (s *MOFSv) AddPage(items []md.MDPage) error {
 			continue
 		}
 		oldEntity := md.MDPage{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Type != entity.Type {
 				datas["Type"] = entity.Type
@@ -467,7 +467,7 @@ func (s *MOFSv) AddPageView(items []md.MDPageView) error {
 			continue
 		}
 		oldEntity := md.MDPageView{}
-		if s.repo.Model(oldEntity).Where("page_id=? and code=?", entity.PageID, entity.Code).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Order("id").Where("page_id=? and code=?", entity.PageID, entity.Code).Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Name != entity.Name {
 				datas["Name"] = entity.Name

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/context"
 	"github.com/ggoop/goutils/glog"
@@ -15,6 +17,9 @@ import (
 	"net/url"
 	"time"
 )
+
+//code 到 RegObject 的缓存
+var codeRegObjectMap map[string]*RegObject
 
 func GetRegistry() string {
 	registry := configs.Default.App.Registry
@@ -193,9 +198,17 @@ func GetServerAddr(code string) (string, error) {
 	return "", nil
 }
 
+/**
+通过编码找到注册对象
+*/
 func FindByCode(code string) (*RegObject, error) {
 	if code == "" {
 		return nil, nil
+	}
+	//优先从缓存里取
+	ck := fmt.Sprintf("%s", strings.ToLower(code))
+	if cv, ok := codeRegObjectMap[ck]; ok && cv != nil {
+		return cv, nil
 	}
 	client := &http.Client{}
 	client.Timeout = 2 * time.Second
@@ -233,5 +246,8 @@ func FindByCode(code string) (*RegObject, error) {
 		glog.Error(resBodyObj.Msg)
 		return nil, err
 	}
+	//设置缓存
+	codeRegObjectMap[ck] = resBodyObj.Data
+
 	return resBodyObj.Data, nil
 }

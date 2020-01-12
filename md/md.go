@@ -75,7 +75,7 @@ func (m *md) GetEntity() *MDEntity {
 		return nil
 	}
 	item := MDEntity{}
-	query := m.db.Model(item).Preload("Fields").Where("id=?", mdInfo.ID)
+	query := m.db.Model(item).Preload("Fields").Order("id").Where("id=?", mdInfo.ID)
 	if err := query.Take(&item).Error; err != nil {
 		glog.Error(err)
 	} else {
@@ -180,6 +180,10 @@ func (m *md) Migrate() {
 			m.db.Model(entity).Where("id=?", entity.ID).Updates(updates)
 			entity = m.GetEntity()
 		}
+	}
+	if entity == nil {
+		glog.Error("元数据ID为空", glog.String("Name", mdInfo.Name))
+		return
 	}
 	codes := make([]string, 0)
 	for _, field := range scope.GetModelStruct().StructFields {
@@ -296,7 +300,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 			}
 		}
 		db.AutoMigrate(needDb...)
-
+		glog.Error("AutoMigrate MD")
 		for _, v := range mds {
 			m := newMd(v, db)
 			m.Migrate()
@@ -314,6 +318,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 			m.Migrate()
 		}
 		//表迁移
+		glog.Error("AutoMigrate BIZ")
 		db.AutoMigrate(needDb...)
 	}
 

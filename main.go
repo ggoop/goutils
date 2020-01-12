@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
@@ -14,8 +16,13 @@ func main() {
 	//test_query()
 }
 func test_query() {
+	now := time.Now()
 	mysql := repositories.NewMysqlRepo()
+	glog.Error(time.Since(now))
+	now = time.Now()
 	md.Migrate(mysql, &testTag{})
+	glog.Error(time.Since(now))
+	now = time.Now()
 	items := make([]interface{}, 0)
 	item := &testTag{ID: utils.GUID(), TypeID: "dd"}
 

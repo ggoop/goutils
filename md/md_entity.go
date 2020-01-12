@@ -110,9 +110,9 @@ func GetEntity(id string) *MDEntity {
 	}
 	item := &MDEntity{}
 	if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
-		db.Preload("Fields").Take(item, "id=?", id)
+		db.Preload("Fields").Order("id").Take(item, "id=?", id)
 	}); err != nil {
-		glog.Errorf("di Provide error:%s", err)
+		repositories.Default().Preload("Fields").Order("id").Take(item, "id=?", id)
 	}
 	if item.ID != "" {
 		mdCache[strings.ToLower(item.ID)] = item

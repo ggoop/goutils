@@ -37,7 +37,7 @@ func (s *QueryCase) Format() *QueryCase {
 	if s.Query == nil && s.QueryID != "" {
 		if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
 			q := Query{}
-			if err := db.Preload("Columns").Preload("Orders").Preload("Wheres").Take(&q, "id=? or code=?", s.QueryID, s.QueryID).Error; err != nil {
+			if err := db.Preload("Columns").Preload("Orders").Preload("Wheres").Order("id").Take(&q, "id=? or code=?", s.QueryID, s.QueryID).Error; err != nil {
 				glog.Errorf("query error:%s", err)
 			}
 			if q.ID != "" {
