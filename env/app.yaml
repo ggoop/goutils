@@ -1,26 +1,27 @@
 app:
-    token: 01e8b4a088391070beb7a30051fb196f
-    code: appcode
-    name: 应用名称
-    locale: zh-cn
-    port: 3003    
-    debug: true
+  token: 01e8b4a088391070beb7a30051fb196f
+  code: appcode
+  name: 应用名称
+  locale: zh-cn
+  port: 3003
+  debug: true
+  gateway: aaaa
 db:
-    # mysql,mssql
-    driver: mssql
-    # localhost
-    host: 10.16.1.160
-    # 3306,1433
-    port: 1433
-    database: goutils
-    username: sa
-    password: ufsoft*123
-log: 
+  # mysql,mssql
+  driver: mssql
+  # localhost
+  host: 192.168.2.104
+  # 3306,1433
+  port: 1433
+  database: goutils
+  username: sa
+  password: 123456
+log:
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info
   path: ./storage/logs
 p1: p1v
-p2: 
-    p22: p22v
-    p23: p22v
-    p24: p22v
+p2:
+  p22: p22v
+  p23: p22v
+  p24: p22v

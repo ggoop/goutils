@@ -19,7 +19,7 @@ import (
 )
 
 //code 到 RegObject 的缓存
-var codeRegObjectMap map[string]*RegObject
+var codeRegObjectMap map[string]*RegObject = make(map[string]*RegObject)
 
 func GetRegistry() string {
 	registry := configs.Default.App.Registry
@@ -98,9 +98,10 @@ func RegisterDefault() error {
 		}
 	}
 	return Register(RegObject{
-		Code:  configs.Default.App.Code,
-		Name:  configs.Default.App.Name,
-		Addrs: addrs,
+		Code:    configs.Default.App.Code,
+		Name:    configs.Default.App.Name,
+		Addrs:   addrs,
+		Configs: configs.Default,
 	})
 }
 func Register(item RegObject) error {
@@ -111,7 +112,8 @@ func Register(item RegObject) error {
 		glog.Error(err)
 		return err
 	}
-	remoteUrl, _ := url.Parse(GetRegistry())
+	regHost := GetRegistry()
+	remoteUrl, _ := url.Parse(regHost)
 	remoteUrl.Path = "/api/regs/register"
 	req, err := http.NewRequest("POST", remoteUrl.String(), bytes.NewBuffer([]byte(postBody)))
 	if err != nil {
@@ -143,6 +145,7 @@ func Register(item RegObject) error {
 		glog.Error(resBodyObj.Msg)
 		return err
 	}
+	glog.Error("成功注册：", glog.Any("Addrs", item.Addrs), glog.Any("RegHost", regHost))
 	return nil
 }
 func DoHttpRequest(serverName, method, path string, body io.Reader) ([]byte, error) {

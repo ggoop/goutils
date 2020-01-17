@@ -1,63 +1,91 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/spf13/viper"
-
 	"github.com/ggoop/goutils/glog"
 )
 
 type AppConfig struct {
-	Token   string `mapstructure:"token"`
-	Code    string `mapstructure:"code"`
-	Active  string `mapstructure:"active"`
-	Name    string `mapstructure:"name"`
-	Port    string `mapstructure:"port"`
-	Locale  string `mapstructure:"locale"`
-	Debug   bool   `mapstructure:"debug"`
-	Storage string `mapstructure:"storage"`
+	Token   string `mapstructure:"token" json:"token"`
+	Code    string `mapstructure:"code" json:"code"`
+	Active  string `mapstructure:"active" json:"active"`
+	Name    string `mapstructure:"name" json:"name"`
+	Port    string `mapstructure:"port" json:"port"`
+	Locale  string `mapstructure:"locale" json:"locale"`
+	Debug   bool   `mapstructure:"debug" json:"debug"`
+	Storage string `mapstructure:"storage" json:"storage"`
 	//注册中心
-	Registry string `mapstructure:"registry"`
+	Registry string `mapstructure:"registry" json:"registry"`
 	//服务地址，带端口号
-	Address string `mapstructure:"address"`
+	Address string `mapstructure:"address" json:"address"`
 }
 type DbConfig struct {
-	Driver    string `mapstructure:"driver"`
-	Host      string `mapstructure:"host"`
-	Port      string `mapstructure:"port"`
-	Database  string `mapstructure:"database"`
-	Username  string `mapstructure:"username"`
-	Password  string `mapstructure:"password"`
-	Charset   string `mapstructure:"charset"`
-	Collation string `mapstructure:"collation"`
+	Driver    string `mapstructure:"driver" json:"driver"`
+	Host      string `mapstructure:"host" json:"host"`
+	Port      string `mapstructure:"port" json:"port"`
+	Database  string `mapstructure:"database" json:"database"`
+	Username  string `mapstructure:"username" json:"username"`
+	Password  string `mapstructure:"password" json:"password"`
+	Charset   string `mapstructure:"charset" json:"charset"`
+	Collation string `mapstructure:"collation" json:"collation"`
 }
 type LogConfig struct {
-	Level string `mapstructure:"level"`
-	Path  string `mapstructure:"path"`
-	Stack bool   `mapstructure:"stack"`
+	Level string `mapstructure:"level" json:"level"`
+	Path  string `mapstructure:"path" json:"path"`
+	Stack bool   `mapstructure:"stack" json:"stack"`
 }
 type AuthConfig struct {
 	//权限中心地址
-	Address string `mapstructure:"address"`
+	Address string `mapstructure:"address" json:"address"`
 	//权限中心编码
-	Code string `mapstructure:"code"`
+	Code string `mapstructure:"code" json:"code"`
 }
 
 const AppConfigName = "app"
 
+type jsonConfig struct {
+	App  AppConfig              `mapstructure:"app" json:"app"`
+	Db   DbConfig               `mapstructure:"db" json:"db"`
+	Log  LogConfig              `mapstructure:"log" json:"log"`
+	Auth AuthConfig             `mapstructure:"auth" json:"auth"`
+	Data map[string]interface{} `json:"data"`
+}
+
 type Config struct {
-	App  AppConfig
-	Db   DbConfig
-	Log  LogConfig
-	Auth AuthConfig
+	App  AppConfig  `mapstructure:"app" json:"app"`
+	Db   DbConfig   `mapstructure:"db" json:"db"`
+	Log  LogConfig  `mapstructure:"log" json:"log"`
+	Auth AuthConfig `mapstructure:"auth" json:"auth"`
 	data map[string]interface{}
 }
 
+func (c Config) MarshalJSON() ([]byte, error) {
+	jsonMap := jsonConfig{}
+	jsonMap.App = c.App
+	jsonMap.Db = c.Db
+	jsonMap.Log = c.Log
+	jsonMap.Auth = c.Auth
+	jsonMap.Data = c.data
+	return json.Marshal(jsonMap)
+}
+
+func (c *Config) UnmarshalJSON(b []byte) error {
+	jsonMap := jsonConfig{}
+	json.Unmarshal(b, &jsonMap)
+	c.App = jsonMap.App
+	c.Db = jsonMap.Db
+	c.Log = jsonMap.Log
+	c.Auth = jsonMap.Auth
+	c.data = jsonMap.Data
+	return nil
+}
 func (s *Config) GetValue(name string) string {
 	v := s.GetObject(name)
 	if v == nil {
@@ -108,6 +136,10 @@ func (s *Config) GetObject(name string) interface{} {
 	}
 	if v, ok := s.data[strings.ToLower(name)]; ok {
 		return v
+	}
+	var d interface{}
+	if err := s.UnmarshalValue(name, &d); err == nil {
+		return d
 	}
 	return nil
 }

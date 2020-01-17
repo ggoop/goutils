@@ -35,9 +35,10 @@ func (s *RegStoreSv) Register() {
 		}
 	}
 	s.Add(RegObject{
-		Code:  configs.Default.App.Code,
-		Name:  configs.Default.App.Name,
-		Addrs: addrs,
+		Code:    configs.Default.App.Code,
+		Name:    configs.Default.App.Name,
+		Addrs:   addrs,
+		Configs: configs.Default,
 	})
 }
 func (s *RegStoreSv) Add(item RegObject) *RegObject {

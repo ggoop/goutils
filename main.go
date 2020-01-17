@@ -1,11 +1,10 @@
 package main
 
 import (
-	"time"
+	"net/url"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
-	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -16,20 +15,10 @@ func main() {
 	//test_query()
 }
 func test_query() {
-	now := time.Now()
-	mysql := repositories.NewMysqlRepo()
-	glog.Error(time.Since(now))
-	now = time.Now()
-	md.Migrate(mysql, &testTag{})
-	glog.Error(time.Since(now))
-	now = time.Now()
-	items := make([]interface{}, 0)
-	item := &testTag{ID: utils.GUID(), TypeID: "dd"}
+	remoteUrl, _ := url.Parse("http://129.9.9.9/aaa")
+	remoteUrl.Path = "/api/ents/register"
 
-	items = append(items, &item)
-	mysql.Create(&item)
-	//mysql.BatchInsert(items)
-
+	glog.Error(remoteUrl.String())
 }
 
 type testTag struct {

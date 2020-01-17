@@ -34,6 +34,9 @@ func readConfig() *LogConfig {
 	if err := viper.UnmarshalKey("log", config); err != nil {
 		//Errorf("Fatal error when reading %s config file:%s", "app", err)
 	}
+	if config.Path == "" {
+		config.Path = "./storage/logs"
+	}
 	return config
 }
 
@@ -49,7 +52,7 @@ func NowFunc() time.Time {
 	return time.Now()
 }
 
-func (l *Logger) sqlLog(values ...interface{}){
+func (l *Logger) sqlLog(values ...interface{}) {
 	if len(values) > 1 {
 		var (
 			sql             string
@@ -106,9 +109,9 @@ func (l *Logger) sqlLog(values ...interface{}){
 				}
 			}
 			l.Debug(sql,
-				String("type","sql"),
-				String("rows",strconv.FormatInt(values[5].(int64), 10)),
-				String("duration",fmt.Sprintf("%.2fms", float64(values[2].(time.Duration).Nanoseconds()/1e4)/100.0)))
+				String("type", "sql"),
+				String("rows", strconv.FormatInt(values[5].(int64), 10)),
+				String("duration", fmt.Sprintf("%.2fms", float64(values[2].(time.Duration).Nanoseconds()/1e4)/100.0)))
 
 		}
 	}
