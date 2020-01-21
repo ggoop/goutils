@@ -17,6 +17,16 @@ func New() Context {
 	return Context{data: make(map[string]string)}
 }
 
+type Token struct {
+	Type        string `json:"type"`
+	AccessToken string `json:"access_token"`
+	ExpiresAt   int64  `json:"expires_at"`
+}
+
+func (s *Token) String() string {
+	return fmt.Sprintf("%s %s", s.Type, s.AccessToken)
+}
+
 type Context struct {
 	data map[string]string
 }
@@ -150,7 +160,14 @@ func (s *Context) SetValue(name, value string) *Context {
 	}
 	return s
 }
-
+func (s *Context) ToToken() *Token {
+	tokenStr := strings.Split(s.ToTokenString(), " ")
+	if len(tokenStr) < 2 {
+		return nil
+	}
+	t := Token{AccessToken: tokenStr[1], Type: tokenStr[0], ExpiresAt: s.ExpiresAt()}
+	return &t
+}
 func (s *Context) ToTokenString() string {
 	claim := jwt.MapClaims{}
 	for k, v := range s.data {

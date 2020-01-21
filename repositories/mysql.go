@@ -34,6 +34,20 @@ func Default() *MysqlRepo {
 	}
 	return _default
 }
+func Open() *MysqlRepo {
+	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(true))
+	if err != nil {
+		glog.Errorf("orm failed to initialized: %v", err)
+	}
+
+	db.LogMode(configs.Default.App.Debug)
+	repo := createMysqlRepo(db)
+
+	return repo
+}
+func (s *MysqlRepo) Close() error {
+	return s.DB.Close()
+}
 func NewMysqlRepo() *MysqlRepo {
 	// 生成数据库
 	CreateDB(configs.Default.Db.Database)
@@ -41,6 +55,7 @@ func NewMysqlRepo() *MysqlRepo {
 	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(true))
 	if err != nil {
 		glog.Errorf("orm failed to initialized: %v", err)
+		panic(err)
 	}
 
 	db.LogMode(configs.Default.App.Debug)
