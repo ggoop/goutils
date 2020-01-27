@@ -19,6 +19,7 @@ const (
 	Layout_YYYYMMDD        = "2006-01-02"
 	Layout_YYYYMMDDHHIISS  = "2006-01-02 15:04:05"
 	Layout_YYYYMMDDHHIISST = "2006-01-02T15:04:05"
+	Layout_YYYYMMDD2        = "20060102"
 )
 
 func NewTime() Time {
