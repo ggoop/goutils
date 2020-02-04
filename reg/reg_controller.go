@@ -6,8 +6,7 @@ import (
 )
 
 type RegController struct {
-	Ctx   iris.Context
-	Store *RegStoreSv
+	Ctx iris.Context
 }
 
 func (c *RegController) PostRegister() results.Result {
@@ -15,12 +14,12 @@ func (c *RegController) PostRegister() results.Result {
 	if err := c.Ctx.ReadJSON(&item); err != nil {
 		return results.ToError(err)
 	}
-	c.Store.Add(item)
+	reg_store.Add(item)
 	return results.ToJson(results.Map{"data": true})
 }
 func (c *RegController) GetBy(code string) results.Result {
-	return results.ToJson(results.Map{"data": c.Store.Get(RegObject{Code: code})})
+	return results.ToJson(results.Map{"data": reg_store.Get(RegObject{Code: code})})
 }
 func (c *RegController) Get() results.Result {
-	return results.ToJson(results.Map{"data": c.Store.GetAll()})
+	return results.ToJson(results.Map{"data": reg_store.GetAll()})
 }

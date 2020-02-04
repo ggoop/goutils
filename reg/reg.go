@@ -4,23 +4,37 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
-	"github.com/ggoop/goutils/configs"
-	"github.com/ggoop/goutils/context"
-	"github.com/ggoop/goutils/glog"
-	"github.com/ggoop/goutils/utils"
-
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/ggoop/goutils/configs"
+	"github.com/ggoop/goutils/context"
+	"github.com/ggoop/goutils/glog"
 )
 
 //code 到 RegObject 的缓存
-var codeRegObjectMap map[string]*RegObject = make(map[string]*RegObject)
+var _codeRegObjectMap map[string]*RegObject = make(map[string]*RegObject)
 
+func setRegObjectCache(item *RegObject) {
+	if item!=nil{
+		_codeRegObjectMap[strings.ToLower(item.Code)] = item
+	}
+}
+func getRegObjectCache(code string) *RegObject {
+	if obj, ok := _codeRegObjectMap[strings.ToLower(code)]; ok {
+		return obj
+	}
+	return nil
+}
+
+/**
+获取注册中心地址
+*/
 func GetRegistry() string {
 	registry := configs.Default.App.Registry
 	if registry == "" {
@@ -32,11 +46,14 @@ func localRegistry() string {
 	return fmt.Sprintf("http://127.0.0.1:%s", configs.Default.App.Port)
 }
 
+/**
+通过token获取上下文
+*/
 func GetTokenContext(tokenCode string) (*context.Context, error) {
 	//1、权限注册中心、2、应用注册中心，3、本地
 	authAddr := ""
-	if sers, err := FindByCode(configs.Default.Auth.Address); sers != nil && len(sers.Addrs[0]) > 0 {
-		authAddr = sers.Addrs[0]
+	if sers, err := FindByCode(configs.Default.Auth.Address); sers != nil {
+		authAddr = sers.Address
 	} else {
 		glog.Error(err)
 	}
@@ -69,11 +86,11 @@ func GetTokenContext(tokenCode string) (*context.Context, error) {
 		return nil, err
 	}
 	var resBodyObj struct {
-		Msg  string `json:"msg"`
-		Data struct {
+		Msg   string `json:"msg"`
+		Token struct {
 			AccessToken string `json:"access_token"`
 			Type        string `json:"type"`
-		} `json:"data"`
+		} `json:"token"`
 	}
 	if err := json.Unmarshal(resBody, &resBodyObj); err != nil {
 		glog.Error(err)
@@ -84,24 +101,24 @@ func GetTokenContext(tokenCode string) (*context.Context, error) {
 		return nil, err
 	}
 	token := &context.Context{}
-	token, _ = token.FromTokenString(fmt.Sprintf("%s %s", resBodyObj.Data.Type, resBodyObj.Data.AccessToken))
+	token, _ = token.FromTokenString(fmt.Sprintf("%s %s", resBodyObj.Token.Type, resBodyObj.Token.AccessToken))
 	return token, nil
 }
+
+/**
+由配置文件信息，注册
+*/
 func RegisterDefault() error {
-	addrs := make([]string, 0)
-	if host := configs.Default.App.Address; host != "" {
-		addrs = append(addrs, host)
-	} else {
-		ips := utils.GetIpAddrs()
-		for _, item := range ips {
-			addrs = append(addrs, fmt.Sprintf("http://%s:%s", item, configs.Default.App.Port))
-		}
+	address := configs.Default.App.Address
+	if address == "" {
+		address = fmt.Sprintf("http://127.0.0.1:%s", configs.Default.App.Port)
 	}
 	return Register(RegObject{
-		Code:    configs.Default.App.Code,
-		Name:    configs.Default.App.Name,
-		Addrs:   addrs,
-		Configs: configs.Default,
+		Code:          configs.Default.App.Code,
+		Name:          configs.Default.App.Name,
+		Address:       address,
+		PublicAddress: configs.Default.App.PublicAddress,
+		Configs:       configs.Default,
 	})
 }
 func Register(item RegObject) error {
@@ -145,7 +162,7 @@ func Register(item RegObject) error {
 		glog.Error(resBodyObj.Msg)
 		return err
 	}
-	glog.Error("成功注册：", glog.Any("Addrs", item.Addrs), glog.Any("RegHost", regHost))
+	glog.Error("成功注册：", glog.Any("Item", item), glog.Any("RegHost", regHost))
 	return nil
 }
 func DoHttpRequest(serverName, method, path string, body io.Reader) ([]byte, error) {
@@ -153,10 +170,10 @@ func DoHttpRequest(serverName, method, path string, body io.Reader) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	if regs == nil || len(regs.Addrs) == 0 {
+	if regs == nil || regs.Address == "" {
 		return nil, glog.Error("找不到服务,", glog.String("serverName", serverName))
 	}
-	serverUrl := regs.Addrs[0]
+	serverUrl := regs.Address
 	client := &http.Client{}
 	remoteUrl, err := url.Parse(serverUrl)
 	if err != nil {
@@ -195,8 +212,10 @@ func DoHttpRequest(serverName, method, path string, body io.Reader) ([]byte, err
 func GetServerAddr(code string) (string, error) {
 	if d, err := FindByCode(code); err != nil {
 		return "", err
-	} else if d != nil {
-		return d.Addrs[0], nil
+	} else if d != nil && d.Address != "" {
+		return d.Address, nil
+	} else if d != nil && d.PublicAddress != "" {
+		return d.PublicAddress, nil
 	}
 	return "", nil
 }
@@ -209,8 +228,7 @@ func FindByCode(code string) (*RegObject, error) {
 		return nil, nil
 	}
 	//优先从缓存里取
-	ck := fmt.Sprintf("%s", strings.ToLower(code))
-	if cv, ok := codeRegObjectMap[ck]; ok && cv != nil {
+	if cv := getRegObjectCache(code); cv != nil {
 		return cv, nil
 	}
 	client := &http.Client{}
@@ -250,7 +268,7 @@ func FindByCode(code string) (*RegObject, error) {
 		return nil, err
 	}
 	//设置缓存
-	codeRegObjectMap[ck] = resBodyObj.Data
+	setRegObjectCache(resBodyObj.Data)
 
 	return resBodyObj.Data, nil
 }

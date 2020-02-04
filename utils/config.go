@@ -24,7 +24,8 @@ type AppConfig struct {
 	//注册中心
 	Registry string `mapstructure:"registry" json:"registry"`
 	//服务地址，带端口号
-	Address string `mapstructure:"address" json:"address"`
+	Address       string `mapstructure:"address" json:"address"`
+	PublicAddress string `mapstructure:"public_address" json:"public_address"`
 }
 type DbConfig struct {
 	Driver    string `mapstructure:"driver" json:"driver"`

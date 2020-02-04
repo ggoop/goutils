@@ -2,9 +2,8 @@ package files
 
 import (
 	"fmt"
-	"path"
-
 	"github.com/shopspring/decimal"
+	"path"
 
 	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/md"
@@ -65,6 +64,10 @@ func GetMapIntValue(key string, row map[string]interface{}) int {
 		return 0
 	}
 	return utils.ToInt(v)
+}
+
+func GetMapSBoolValue(key string, row map[string]interface{}) md.SBool {
+	return md.SBool_Parse(GetMapValue(key, row))
 }
 func GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
 	v := GetMapValue(key, row)

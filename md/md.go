@@ -57,7 +57,7 @@ type md struct {
 	db    *repositories.MysqlRepo
 }
 
-var initMD bool
+var InitMD_Completed bool
 
 func newMd(value interface{}, db *repositories.MysqlRepo) *md {
 	item := md{Value: value, db: db}
@@ -133,6 +133,9 @@ func (s *md) dataTypeOf(field *gorm.StructField) string {
 		default:
 			sqlType = "string"
 		}
+	}
+	if sqlType==""{
+		sqlType = "string"
 	}
 	return sqlType
 }
@@ -284,8 +287,8 @@ func (m *md) Migrate() {
 
 func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	//先增加模型表
-	if !initMD {
-		initMD = true
+	if !InitMD_Completed {
+		InitMD_Completed = true
 		mds := []interface{}{
 			&MDEntity{}, &MDField{}, &MDTag{}, &MDEnum{},
 			&MDActionCommand{}, &MDActionRule{}, &MDActionMaker{},

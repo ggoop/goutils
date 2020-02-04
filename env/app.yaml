@@ -5,17 +5,16 @@ app:
   locale: zh-cn
   port: 3003
   debug: true
-  gateway: aaaa
 db:
   # mysql,mssql
-  driver: mssql
+  driver: mysql
   # localhost
-  host: 192.168.2.104
+  host: localhost
   # 3306,1433
-  port: 1433
+  port: 3306
   database: goutils
-  username: sa
-  password: 123456
+  username: root
+  password: root
 log:
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info

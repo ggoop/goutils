@@ -13,42 +13,43 @@ import (
 	"path"
 )
 
-var store *RegStoreSv
+var reg_store *regStoreSv
 
-type RegStoreSv struct {
+type regStoreSv struct {
 	data   map[string]*RegObject
 	dbFile string
 }
 
-func NewRegStoreSv() *RegStoreSv {
-	return &RegStoreSv{data: make(map[string]*RegObject)}
+func Start() {
+	reg_store = &regStoreSv{data: make(map[string]*RegObject)}
+	reg_store.Init()
+	reg_store.Register()
 }
 
-func (s *RegStoreSv) Register() {
-	addrs := make([]string, 0)
-	if host := configs.Default.App.Address; host != "" {
-		addrs = append(addrs, host)
-	} else {
-		ips := utils.GetIpAddrs()
-		for _, item := range ips {
-			addrs = append(addrs, fmt.Sprintf("http://%s:%s", item, configs.Default.App.Port))
-		}
+func (s *regStoreSv) Register() {
+	address := configs.Default.App.Address
+	if address == "" {
+		address = fmt.Sprintf("http://127.0.0.1:%s", configs.Default.App.Port)
 	}
 	s.Add(RegObject{
-		Code:    configs.Default.App.Code,
-		Name:    configs.Default.App.Name,
-		Addrs:   addrs,
-		Configs: configs.Default,
+		Code:          configs.Default.App.Code,
+		Name:          configs.Default.App.Name,
+		Address:       address,
+		PublicAddress: configs.Default.App.PublicAddress,
+		Configs:       configs.Default,
 	})
 }
-func (s *RegStoreSv) Add(item RegObject) *RegObject {
+func (s *regStoreSv) Add(item RegObject) *RegObject {
 	item.Time = md.NewTimePtr()
 	s.data[item.Key()] = &item
 	s.Store()
+
+	setRegObjectCache(&item)
+
 	return &item
 }
 
-func (s *RegStoreSv) Get(item RegObject) *RegObject {
+func (s *regStoreSv) Get(item RegObject) *RegObject {
 	if old, ok := s.data[item.Key()]; ok {
 		return old
 	} else {
@@ -56,14 +57,14 @@ func (s *RegStoreSv) Get(item RegObject) *RegObject {
 	}
 }
 
-func (s *RegStoreSv) GetAll() []RegObject {
+func (s *regStoreSv) GetAll() []RegObject {
 	items := make([]RegObject, 0)
 	for _, item := range s.data {
 		items = append(items, *item)
 	}
 	return items
 }
-func (s *RegStoreSv) Init() {
+func (s *regStoreSv) Init() {
 	if s.dbFile == "" {
 		s.dbFile = utils.JoinCurrentPath(path.Join(configs.Default.App.Storage, "uploads", "regs"))
 	}
@@ -92,7 +93,7 @@ func (s *RegStoreSv) Init() {
 		s.Add(item)
 	}
 }
-func (s *RegStoreSv) Store() {
+func (s *regStoreSv) Store() {
 	items := s.GetAll()
 	f, err := os.Create(s.dbFile)
 	if err != nil {
