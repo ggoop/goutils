@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/robfig/cron"
 	"io"
 	"strings"
 
@@ -105,15 +106,25 @@ func GetTokenContext(tokenCode string) (*context.Context, error) {
 	return token, nil
 }
 
+var m_cronCache *cron.Cron
+
 /**
 由配置文件信息，注册
 */
-func RegisterDefault() error {
+func RegisterDefault() {
+	if m_cronCache == nil {
+		m_cronCache := cron.New()
+		m_cronCache.AddFunc("@every 120s", registerDefault)
+		m_cronCache.Start()
+	}
+	registerDefault()
+}
+func registerDefault() {
 	address := configs.Default.App.Address
 	if address == "" {
 		address = fmt.Sprintf("http://127.0.0.1:%s", configs.Default.App.Port)
 	}
-	return Register(RegObject{
+	Register(RegObject{
 		Code:          configs.Default.App.Code,
 		Name:          configs.Default.App.Name,
 		Address:       address,
