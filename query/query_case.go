@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ggoop/goutils/context"
@@ -26,14 +27,18 @@ type QueryCase struct {
 	Columns   []QueryColumn    `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
 	Orders    []QueryOrder     `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
 	Wheres    []QueryWhere     `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
+	Filters   []QueryFilter    `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;association_foreignkey:QueryID;name:过滤集合" json:"filters"`
 	Context   *context.Context `gorm:"type:text;name:上下文" json:"context"` //上下文参数
-	Export    bool             `gorm:"name:是否导出" json:"export"`
+	Export    md.SBool         `gorm:"name:是否导出" json:"export"`
+	IsDefault md.SBool         `gorm:"name:默认" json:"is_default"`
+	Condition string           `gorm:"size:200;name:条件" json:"condition"` //条件
+	Q         string           `gorm:"size:200;name:关键字" json:"q"`        //关键字
 }
 
 func (s *QueryCase) MD() *md.Mder {
 	return &md.Mder{ID: "query.case", Name: "查询方案"}
 }
-func (s *QueryCase) Format() *QueryCase {
+func (s *QueryCase) prepareCase() {
 	if s.Query == nil && s.QueryID != "" {
 		if err := di.Global.Invoke(func(db *repositories.MysqlRepo) {
 			q := Query{}
@@ -47,18 +52,23 @@ func (s *QueryCase) Format() *QueryCase {
 			glog.Errorf("di Provide error:%s", err)
 		}
 	}
-	if s.Columns == nil && len(s.Columns) == 0 {
+	if s.Query != nil {
+		s.Condition = s.Query.Condition
+	}
+	if len(s.Columns) == 0 && s.Query != nil {
 		s.Columns = make([]QueryColumn, 0)
 		for _, v := range s.Query.Columns {
 			s.Columns = append(s.Columns, v)
 		}
 	}
+	//默认栏目名称
+	r, _ := regexp.Compile("^[A-Za-z._]$")
 	for _, v := range s.Columns {
-		if v.Name == "" {
+		if v.Name == "" && v.Field != "" && r.MatchString(v.Field) {
 			v.Name = strings.Replace(strings.ToLower(v.Field), ".", "_", -1)
 		}
 	}
-	if s.Orders == nil && len(s.Orders) == 0 {
+	if len(s.Orders) == 0 && s.Query != nil {
 		s.Orders = make([]QueryOrder, 0)
 		for _, v := range s.Query.Orders {
 			s.Orders = append(s.Orders, v)
@@ -73,10 +83,9 @@ func (s *QueryCase) Format() *QueryCase {
 	if s.PageSize <= 0 {
 		s.PageSize = 30
 	}
-	return s
 }
 func (s *QueryCase) GetExector() IExector {
-	s.Format()
+	s.prepareCase()
 	if s.Query == nil {
 		return nil
 	}
@@ -84,21 +93,42 @@ func (s *QueryCase) GetExector() IExector {
 	if s.Page > 0 && s.PageSize > 0 {
 		exector.Page(s.Page, s.PageSize)
 	}
+	if s.Condition != "" {
+		exector.Where(s.Condition)
+	}
+	if s.Q != "" {
+		q := "%" + s.Q + "%"
+		qwhere := exector.Where("")
+		for _, v := range s.Columns {
+			if v.CodeField.IsTrue() || v.NameField.IsTrue() {
+				if v.Expr != "" {
+					qwhere.OrWhere(v.Expr+" like ?", q)
+				} else if v.Field != "" {
+					qwhere.OrWhere(v.Field+" like ?", q)
+				}
+			}
+		}
+	}
 	exector.SetContext(s.Context)
 	for _, v := range s.Columns {
-		if v.Name != "" {
-			exector.Select(v.Field + " as " + v.Name)
-		} else {
-			exector.Select(v.Field)
+		if v.Expr != "" && v.Name != "" {
+			exector.Select(v.Expr + " as " + v.Name)
+		}
+		if v.Expr != "" {
+			exector.Select(v.Expr)
+		} else if v.Field != "" && v.Name != "" {
+			exector.Select("$$" + v.Field + " as " + v.Name)
+		} else if v.Field != "" {
+			exector.Select("$$" + v.Field)
 		}
 	}
 	for _, v := range s.Wheres {
 		iw := s.queryWhereToIWhere(v)
 		if iw != nil {
 			if iw.GetLogical() == "or" {
-				iw = exector.OrWhere(iw.GetQuery(), iw.GetArgs())
+				iw = exector.OrWhere(iw.GetQuery(), iw.GetArgs()...).SetDataType(iw.GetDataType())
 			} else {
-				iw = exector.Where(iw.GetQuery(), iw.GetArgs())
+				iw = exector.Where(iw.GetQuery(), iw.GetArgs()...).SetDataType(iw.GetDataType())
 			}
 			if v.Children != nil && len(v.Children) > 0 {
 				for _, item := range v.Children {
@@ -109,51 +139,95 @@ func (s *QueryCase) GetExector() IExector {
 	}
 	if len(s.Orders) > 0 {
 		for _, v := range s.Orders {
-			if v.Order != "" {
-				exector.Order(v.Field + " " + v.Order)
-			} else {
-				exector.Order(v.Field)
+			if v.Expr != "" && v.Order != "" {
+				exector.Order(fmt.Sprintf("%s %s", v.Expr, v.Order))
+			} else if v.Expr != "" {
+				exector.Order(v.Expr)
+			} else if v.Field != "" && v.Order != "" {
+				exector.Order(fmt.Sprintf("$$%s %s", v.Field, v.Order))
+			} else if v.Field != "" {
+				exector.Order(fmt.Sprintf("$$%s", v.Field))
 			}
 		}
 	} else {
-		exector.Order("ID")
+		exector.Order("$$ID")
 	}
 
 	return exector
 }
 func (s *QueryCase) addSubItemToIWhere(iw IQWhere, subValue QueryWhere) {
 	newIw := s.queryWhereToIWhere(subValue)
-	if iw.GetLogical() == "or" {
-		newIw = iw.OrWhere(newIw.GetQuery(), newIw.GetArgs())
-	} else {
-		newIw = iw.Where(newIw.GetQuery(), newIw.GetArgs())
+	if newIw != nil && iw.GetLogical() == "or" {
+		newIw = iw.OrWhere(newIw.GetQuery(), newIw.GetArgs()).SetDataType(newIw.GetDataType())
+	} else if (newIw != nil) {
+		newIw = iw.Where(newIw.GetQuery(), newIw.GetArgs()).SetDataType(newIw.GetDataType())
 	}
-	if subValue.Children != nil && len(subValue.Children) > 0 {
+	if newIw != nil && subValue.Children != nil && len(subValue.Children) > 0 {
 		for _, item := range subValue.Children {
 			s.addSubItemToIWhere(newIw, item)
 		}
 	}
 }
 func (s *QueryCase) queryWhereToIWhere(value QueryWhere) IQWhere {
-	item := qWhere{Logical: value.Logical}
-	if value.Field != "" && value.Value != "" && value.Operator == "contains" {
-		item.Query = fmt.Sprintf("%v like ?", value.Field)
-		item.Args = []interface{}{"%" + value.Value + "%"}
-	} else if value.Field != "" && value.Value != "" && value.Operator == "like" {
-		item.Query = fmt.Sprintf("%v like ?", value.Field)
-		item.Args = []interface{}{"%" + value.Value + "%"}
-	} else if value.Field != "" && value.Value != "" && value.Operator == "not like" {
-		item.Query = fmt.Sprintf("%v not like ?", value.Field)
-		item.Args = []interface{}{"%" + value.Value + "%"}
-	} else if value.Field != "" && value.Value != "" && (value.Operator == "in" || value.Operator == "not in") {
-		item.Query = fmt.Sprintf("%v %s (?)", value.Field, value.Operator)
-		item.Args = []interface{}{value.Value}
-	} else if value.Field != "" && value.Value != "" && (value.Operator == "=" || value.Operator == "<>" || value.Operator == ">" || value.Operator == ">=" || value.Operator == "<" || value.Operator == "<=") {
-		item.Query = fmt.Sprintf("%v %s ?", value.Field, value.Operator)
-		item.Args = []interface{}{value.Value}
-	} else if value.Field != "" && value.Value != "" && s.Context != nil && (value.Operator == "=p" || value.Operator == "<>p" || value.Operator == ">p" || value.Operator == ">=p" || value.Operator == "<p" || value.Operator == "<=p") {
-		item.Query = fmt.Sprintf("%v %s ?", value.Field, strings.Replace(value.Operator, "p", "", -1))
-		item.Args = []interface{}{s.Context.GetValue(strings.Replace(value.Value, "@", "", -1))}
+	if value.Enabled.IsFalse() {
+		return nil
+	}
+	if value.Operator == "" {
+		value.Operator = "="
+	}
+	item := qWhere{Logical: value.Logical, DataType: value.DataType}
+	//简单模式
+	if value.Expr == "" && value.Field != "" && value.Value.Valid() && value.Operator == "contains" {
+		item.Query = fmt.Sprintf("$$%v like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value.GetString() + "%"}
+		if value.Value.GetString() == "" {
+			return nil
+		}
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && value.Operator == "like" {
+		item.Query = fmt.Sprintf("$$%v like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value.GetString() + "%"}
+		if value.Value.GetString() == "" {
+			return nil
+		}
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && value.Operator == "not like" {
+		item.Query = fmt.Sprintf("$$%v not like ?", value.Field)
+		item.Args = []interface{}{"%" + value.Value.GetString() + "%"}
+		if value.Value.GetString() == "" {
+			return nil
+		}
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && (value.Operator == "between") {
+		item.Args = value.Value.GetInterfaceSlice()
+		item.Query = fmt.Sprintf("$$%v %s ? and ?", value.Field, value.Operator)
+		if len(item.Args) != 2 {
+			return nil
+		}
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && (value.Operator == "in" || value.Operator == "not in") {
+		item.Args = value.Value.GetInterfaceSlice()
+		item.Query = fmt.Sprintf("$$%v %s (?)", value.Field, value.Operator)
+		if len(item.Args) == 0 {
+			return nil
+		}
+
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && (value.Operator == "=" || value.Operator == "<>" || value.Operator == ">" || value.Operator == ">=" || value.Operator == "<" || value.Operator == "<=") {
+		item.Query = fmt.Sprintf("$$%v %s ?", value.Field, value.Operator)
+		item.Args = value.Value.GetInterfaceSlice()
+		if len(item.Args) == 0 || value.Value.GetString() == "" {
+			return nil
+		}
+	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && value.Value.GetString() != "" && s.Context != nil && (value.Operator == "=p" || value.Operator == "<>p" || value.Operator == ">p" || value.Operator == ">=p" || value.Operator == "<p" || value.Operator == "<=p") {
+		item.Query = fmt.Sprintf("$$%v %s ?", value.Field, strings.Replace(value.Operator, "p", "", -1))
+		item.Args = []interface{}{s.Context.GetValue(strings.Replace(value.Value.GetString(), "@", "", -1))}
+	} else if value.Expr != "" {
+		//表达式 模式
+		item.Query = value.Expr
+		item.Args = value.Value.GetInterfaceSlice()
+		if strings.Contains(item.Query, "?") && len(item.Args) == 0 {
+			return nil
+		}
+	} else {
+		if len(value.Children) == 0 {
+			return nil
+		}
 	}
 	return &item
 }

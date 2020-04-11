@@ -333,23 +333,26 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 func (s *MOFSv) AddActionCommand(items []md.MDActionCommand) error {
 	for i, _ := range items {
 		entity := items[i]
-		if entity.ID == "" {
+		if entity.Type == "" && entity.Code == "" {
 			continue
 		}
 		oldEntity := md.MDActionCommand{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Where("page_id=? and code=? and type=?", entity.PageID, entity.Code, entity.Type).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
 			if oldEntity.Path != entity.Path {
 				datas["Path"] = entity.Path
 			}
-			if oldEntity.Tags != entity.Tags {
-				datas["Tags"] = entity.Tags
+			if oldEntity.Content != entity.Content {
+				datas["Content"] = entity.Content
+			}
+			if oldEntity.Rules != entity.Rules {
+				datas["Rules"] = entity.Rules
 			}
 			if oldEntity.Name != entity.Name {
 				datas["Name"] = entity.Name
 			}
-			if oldEntity.Domain != entity.Domain {
-				datas["Domain"] = entity.Domain
+			if oldEntity.System.NotEqual(entity.System) && entity.System.Valid() {
+				datas["System"] = entity.System
 			}
 			if len(datas) > 0 {
 				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
@@ -364,28 +367,20 @@ func (s *MOFSv) AddActionCommand(items []md.MDActionCommand) error {
 func (s *MOFSv) AddActionRule(items []md.MDActionRule) error {
 	for i, _ := range items {
 		entity := items[i]
-		if entity.ID == "" {
+		if entity.Code == "" {
 			continue
 		}
 		oldEntity := md.MDActionRule{}
-		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Where("code=? and domain=?", entity.Code, entity.Domain).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
-			if oldEntity.Content != entity.Content && entity.Content != "" {
-				if entity.Content == "-" {
-					datas["Content"] = ""
-				} else {
-					datas["Content"] = entity.Content
-				}
-
-			}
-			if oldEntity.Tags != entity.Tags {
-				datas["Tags"] = entity.Tags
-			}
 			if oldEntity.Name != entity.Name {
 				datas["Name"] = entity.Name
 			}
-			if oldEntity.Domain != entity.Domain {
-				datas["Domain"] = entity.Domain
+			if oldEntity.System.NotEqual(entity.System) && entity.System.Valid() {
+				datas["System"] = entity.System
+			}
+			if oldEntity.Async.NotEqual(entity.System) && entity.Async.Valid() {
+				datas["Async"] = entity.Async
 			}
 			if len(datas) > 0 {
 				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
@@ -396,32 +391,6 @@ func (s *MOFSv) AddActionRule(items []md.MDActionRule) error {
 	}
 	return nil
 }
-
-func (s *MOFSv) AddActionMaker(items []md.MDActionMaker) error {
-	for i, _ := range items {
-		entity := items[i]
-		if entity.MakerID == "" || entity.MakerType == "" || entity.CommandID == "" || entity.RuleID == "" {
-			continue
-		}
-		oldEntity := md.MDActionMaker{}
-		if s.repo.Model(oldEntity).Order("id").Where("maker_id=? and maker_type=? and command_id=? and rule_id=?", entity.MakerID, entity.MakerType, entity.CommandID, entity.RuleID).Take(&oldEntity); oldEntity.ID != "" {
-			datas := make(map[string]interface{})
-			if oldEntity.Group != entity.Group {
-				datas["Group"] = entity.Group
-			}
-			if oldEntity.Sequence != entity.Sequence {
-				datas["Sequence"] = entity.Sequence
-			}
-			if len(datas) > 0 {
-				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
-			}
-		} else {
-			s.repo.Create(&entity)
-		}
-	}
-	return nil
-}
-
 func (s *MOFSv) AddPage(items []md.MDPage) error {
 	for i, _ := range items {
 		entity := items[i]
@@ -434,21 +403,23 @@ func (s *MOFSv) AddPage(items []md.MDPage) error {
 			if oldEntity.Type != entity.Type {
 				datas["Type"] = entity.Type
 			}
-			if oldEntity.Widgets != entity.Widgets && entity.Widgets != "" {
-				if entity.Widgets == "-" {
-					datas["Widgets"] = ""
-				} else {
-					datas["Widgets"] = entity.Widgets
-				}
-			}
-			if oldEntity.Tags != entity.Tags {
-				datas["Tags"] = entity.Tags
+			if oldEntity.Widgets.NotEqual(entity.Widgets) && entity.Widgets.Valid() {
+				datas["Widgets"] = entity.Widgets
 			}
 			if oldEntity.Name != entity.Name {
 				datas["Name"] = entity.Name
 			}
 			if oldEntity.Domain != entity.Domain {
 				datas["Domain"] = entity.Domain
+			}
+			if oldEntity.MainEntity != entity.MainEntity && entity.MainEntity != "" {
+				datas["MainEntity"] = entity.MainEntity
+			}
+			if oldEntity.System.NotEqual(entity.System) && entity.System.Valid() {
+				datas["System"] = entity.System
+			}
+			if oldEntity.Templated.NotEqual(entity.Templated) && entity.Templated.Valid() {
+				datas["Templated"] = entity.Templated
 			}
 			if len(datas) > 0 {
 				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
@@ -472,24 +443,19 @@ func (s *MOFSv) AddPageView(items []md.MDPageView) error {
 			if oldEntity.Name != entity.Name {
 				datas["Name"] = entity.Name
 			}
-			if oldEntity.Data != entity.Data && entity.Data != "" {
-				if entity.Data == "-" {
-					datas["Data"] = ""
-				} else {
-					datas["Data"] = entity.Data
-				}
-
+			if oldEntity.Data.NotEqual(entity.Data) && entity.Data.Valid() {
+				datas["Data"] = entity.Data
 			}
 			if oldEntity.EntityID != entity.EntityID {
 				datas["EntityID"] = entity.EntityID
 			}
-			if oldEntity.Nullable != entity.Nullable {
+			if oldEntity.Nullable.NotEqual(entity.Nullable) && entity.Nullable.Valid() {
 				datas["Nullable"] = entity.Nullable
 			}
-			if oldEntity.IsMain != entity.IsMain {
+			if oldEntity.IsMain.NotEqual(entity.IsMain) && entity.IsMain.Valid() {
 				datas["IsMain"] = entity.IsMain
 			}
-			if oldEntity.Multiple != entity.Multiple {
+			if oldEntity.Multiple.NotEqual(entity.Multiple) && entity.Multiple.Valid() {
 				datas["Multiple"] = entity.Multiple
 			}
 			if oldEntity.PrimaryKey != entity.PrimaryKey {

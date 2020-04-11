@@ -22,7 +22,7 @@ import (
 var _codeRegObjectMap map[string]*RegObject = make(map[string]*RegObject)
 
 func setRegObjectCache(item *RegObject) {
-	if item!=nil{
+	if item != nil {
 		_codeRegObjectMap[strings.ToLower(item.Code)] = item
 	}
 }
@@ -221,6 +221,10 @@ func DoHttpRequest(serverName, method, path string, body io.Reader) ([]byte, err
 }
 
 func GetServerAddr(code string) (string, error) {
+	//如果是 http,或者 https，则直接返回
+	if code != "" && strings.Index(strings.ToLower(code), "http") == 0 {
+		return code, nil
+	}
 	if d, err := FindByCode(code); err != nil {
 		return "", err
 	} else if d != nil && d.Address != "" {

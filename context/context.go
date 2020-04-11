@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -53,8 +54,12 @@ func (s *Context) Copy() *Context {
 }
 func (s *Context) ValueReplace(value string) string {
 	if s.data != nil {
-		for k, v := range s.data {
-			value = strings.Replace(value, "{"+k+"}", v, -1)
+		const REGEXP_FIELD_EXP string = `{([A-Za-z._]+[0-9A-Za-z]*)}`
+		r, _ := regexp.Compile(REGEXP_FIELD_EXP)
+		matched := r.FindAllStringSubmatch(value, -1)
+		for _, match := range matched {
+			v:=s.GetValue( utils.SnakeString(match[1]))
+			value = strings.ReplaceAll(value, match[0], v)
 		}
 	}
 	return value

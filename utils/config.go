@@ -2,14 +2,14 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/spf13/viper"
 	"io"
 	"os"
-	"reflect"
+	"path"
 	"strings"
 
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/gmap"
 )
 
 type AppConfig struct {
@@ -51,6 +51,9 @@ type AuthConfig struct {
 
 const AppConfigName = "app"
 
+var DefaultConfig *Config
+var _ENVMaps = gmap.New()
+
 type jsonConfig struct {
 	App  AppConfig              `mapstructure:"app" json:"app"`
 	Db   DbConfig               `mapstructure:"db" json:"db"`
@@ -87,105 +90,82 @@ func (c *Config) UnmarshalJSON(b []byte) error {
 	c.data = jsonMap.Data
 	return nil
 }
-func (s *Config) GetValue(name string) string {
-	v := s.GetObject(name)
-	if v == nil {
-		return ""
-	}
-	switch s := v.(type) {
-	case string:
-		return s
-	case []byte:
-		return string(s)
-	}
-	refV := reflectTarget(reflect.ValueOf(v))
-	if !refV.IsValid() {
-		return ""
-	}
-	switch refV.Kind() {
-	case reflect.String:
-		return refV.String()
-	case reflect.Bool:
-		if refV.Bool() {
-			return "true"
-		} else {
-			return "false"
-		}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return fmt.Sprintf("%d", refV.Int())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return fmt.Sprintf("%d", refV.Uint())
-	case reflect.Float32, reflect.Float64:
-		return fmt.Sprintf("%f", refV.Float())
-	}
-	return ""
+func (s *Config) GetValue(name string, envNames ...string) string {
+	return s.getViper(envNames...).GetString(name)
 }
-func (s *Config) UnmarshalValue(name string, rawVal interface{}) error {
-	return viper.UnmarshalKey(name, rawVal)
+func (s *Config) UnmarshalValue(name string, rawVal interface{}, envNames ...string) error {
+	return s.getViper(envNames...).UnmarshalKey(name, rawVal)
 }
-
-func (s *Config) GetBool(name string) bool {
-	ov := s.GetObject(name)
-	if ov == nil {
-		return false
-	}
-	return ToBool(ov)
+func (s *Config) Unmarshal(rawVal interface{}, envNames ...string) error {
+	return s.getViper(envNames...).Unmarshal(rawVal)
 }
-func (s *Config) GetObject(name string) interface{} {
-	if s.data == nil {
-		return nil
-	}
-	if v, ok := s.data[strings.ToLower(name)]; ok {
-		return v
-	}
-	var d interface{}
-	if err := s.UnmarshalValue(name, &d); err == nil {
-		return d
-	}
-	return nil
+func (s *Config) GetBool(name string, envNames ...string) bool {
+	return s.getViper(envNames...).GetBool(name)
 }
-func (s *Config) SetValue(name string, value interface{}) *Config {
-	if s.data == nil {
-		s.data = make(map[string]interface{})
-	}
-	s.data[strings.ToLower(name)] = value
+func (s *Config) GetObject(name string, envNames ...string) interface{} {
+	return s.getViper(envNames...).Get(name)
+}
+func (s *Config) SetValue(name string, value interface{}, envNames ...string) *Config {
+	s.getViper(envNames...).Set(name, value)
 	return s
 }
+func (s *Config) getViper(envNames ...string) *viper.Viper {
+	if len(envNames) > 0 {
+		return getConfigViper(envNames[0])
+	} else {
+		return getConfigViper(AppConfigName)
+	}
+}
+func getConfigViper(name string) *viper.Viper {
+	if name == "" {
+		name = AppConfigName
+	}
+	name = strings.ToLower(name)
+	if v, ok := _ENVMaps.Get(name); ok && v != nil {
+		if vv, ok := v.(*viper.Viper); ok && vv != nil {
+			return vv
+		}
+	}
 
-var DefaultConfig *Config
+	envType := "yaml"
+	envPath := "env"
 
-func createEnvFile() {
-	appFile := JoinCurrentPath("env/app.yaml")
-	paths := []string{"env/app.prod.yaml", "env/app.dev.yaml"}
-	for _, p := range paths {
-		//不存在时，自动由dev创建
-		if !PathExists(appFile) {
-			devFile := JoinCurrentPath(p)
-			if PathExists(devFile) {
-				if s, err := os.Open(devFile); err == nil {
-					defer s.Close()
-					if newEnv, err := os.Create(appFile); err == nil {
-						defer newEnv.Close()
-						io.Copy(newEnv, s)
-						break
+	envFile := JoinCurrentPath(path.Join(envPath, name+"."+envType))
+	if !PathExists(envFile) {
+		paths := []string{path.Join(envPath, name, "prod."+envType), path.Join(envPath, name, "dev."+envType)}
+		for _, p := range paths {
+			//不存在时，自动由dev创建
+			if !PathExists(envFile) {
+				devFile := JoinCurrentPath(p)
+				if PathExists(devFile) {
+					if s, err := os.Open(devFile); err == nil {
+						defer s.Close()
+						if newEnv, err := os.Create(envFile); err == nil {
+							defer newEnv.Close()
+							io.Copy(newEnv, s)
+							break
+						}
 					}
 				}
 			}
 		}
 	}
+	v := viper.New()
+	v.SetConfigType(envType)
+	v.SetConfigName(name)
+	v.AddConfigPath(JoinCurrentPath(envPath))
+	v.SetConfigFile(envFile)
+
+	if err := v.ReadInConfig(); err != nil {
+		glog.Errorf("Fatal error when reading %s config file:%s", name, err)
+	}
+	_ENVMaps.Set(name, v)
+	return v
 }
 func NewInitConfig() {
-	createEnvFile()
-
 	DefaultConfig = &Config{}
-	viper.SetConfigType("yaml")
-
-	viper.SetConfigName(AppConfigName)
-	viper.AddConfigPath(JoinCurrentPath("env"))
-	if err := viper.ReadInConfig(); err != nil {
-		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
-	}
-	if err := viper.Unmarshal(&DefaultConfig); err != nil {
+	vp := getConfigViper(AppConfigName)
+	if err := vp.Unmarshal(&DefaultConfig); err != nil {
 		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
 	}
 	if DefaultConfig.App.Port == "" {
@@ -224,7 +204,7 @@ func NewInitConfig() {
 		DefaultConfig.Auth.Code = DefaultConfig.App.Code
 	}
 	kvs := make(map[string]interface{})
-	if err := viper.Unmarshal(&kvs); err != nil {
+	if err := vp.Unmarshal(&kvs); err != nil {
 		glog.Errorf("Fatal error when reading %s config file:%s", AppConfigName, err)
 	}
 	if len(kvs) > 0 {

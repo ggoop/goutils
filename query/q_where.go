@@ -7,10 +7,17 @@ type IQWhere interface {
 	Or() IQWhere
 	GetArgs() []interface{}
 	GetQuery() string
+	GetDataType() string
+	SetDataType(dataType string) IQWhere
 	GetLogical() string
+	String() string
 }
 type qWhere struct {
+	//字段与操作号之间需要有空格
+	//示例1: Org =? ; Org in (?) ;$$Org =?  and ($$Period = ?  or $$Period = ? )
+	//示例2：abs($$Qty)>$$TempQty + ?
 	Query    string
+	DataType string
 	Logical  string //and or
 	Sequence int
 	Children []*qWhere
@@ -21,14 +28,23 @@ type qWhere struct {
 func NewQWhere(logical, query string, args ...interface{}) IQWhere {
 	return &qWhere{Query: query, Args: args, Logical: logical}
 }
-
-func (m *qWhere) GetArgs() []interface{} {
-	return m.Args
-}
-func (m *qWhere) GetQuery() string {
+func (m qWhere) String() string {
 	return m.Query
 }
-func (m *qWhere) GetLogical() string {
+func (m qWhere) GetDataType() string {
+	return m.DataType
+}
+func (m *qWhere) SetDataType(dataType string) IQWhere {
+	m.DataType = dataType
+	return m
+}
+func (m qWhere) GetArgs() []interface{} {
+	return m.Args
+}
+func (m qWhere) GetQuery() string {
+	return m.Query
+}
+func (m qWhere) GetLogical() string {
 	return m.Logical
 }
 func (m *qWhere) Where(query string, args ...interface{}) IQWhere {

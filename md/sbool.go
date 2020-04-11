@@ -68,6 +68,23 @@ func (t *SBool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+
+func (t SBool) Not() SBool {
+	if t.IsTrue() {
+		return SBool_False
+	}
+	if t.IsFalse() {
+		return SBool_True
+	}
+	return t
+}
+func (t SBool) Equal(v SBool) bool {
+	return t.value == v.value
+}
+
+func (t SBool) NotEqual(v SBool) bool {
+	return t.value != v.value
+}
 // Value implements the driver Valuer interface.
 func (t SBool) Value() (driver.Value, error) {
 	if !t.valid {
@@ -75,11 +92,9 @@ func (t SBool) Value() (driver.Value, error) {
 	}
 	return t.value, nil
 }
-
 // Scan implements the Scanner interface.
 func (t *SBool) Scan(v interface{}) error {
 	if v == nil {
-		t.value, t.valid = "", false
 		return nil
 	}
 	t.value = t._ToBoolValue(v)

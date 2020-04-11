@@ -210,5 +210,21 @@ func eachSlice(v interface{}, fi func(length int), f func(v interface{}, i int))
 			f((interface{})(v), i)
 		}
 		break
+	default:
+		if v == nil {
+			break
+		}
+		reflectType := reflect.ValueOf(v).Type()
+		if reflectType.Kind() == reflect.Ptr {
+			reflectType = reflectType.Elem()
+		}
+		if reflectType.Kind() != reflect.Slice {
+			if nil != fi {
+				fi(1)
+			}
+			f(v, 0)
+		}
+		break
 	}
+
 }

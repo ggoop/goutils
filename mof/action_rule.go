@@ -1,9 +1,11 @@
 package mof
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -11,8 +13,7 @@ import (
 请求通用类
 */
 type ReqContext struct {
-	MakerID    string      `json:"maker_id"`   //页面ID
-	MakerType  string      `json:"maker_type"` //页面ID
+	PageID     string      `json:"page_id"` //页面ID
 	ID         string      `json:"id"`
 	IDS        []string    `json:"ids"`
 	UserID     string      `json:"user_id"` //用户ID
@@ -39,16 +40,16 @@ type PageViewDTO struct {
 	Name       string      `json:"name"`
 	EntityID   string      `json:"entity_id"`
 	PrimaryKey string      `json:"primary_key"`
-	Multiple   bool        `json:"multiple"`
-	Nullable   bool        `json:"nullable"`
-	IsMain     bool        `json:"is_main"`
+	Multiple   md.SBool    `json:"multiple"`
+	Nullable   md.SBool    `json:"nullable"`
+	IsMain     md.SBool    `json:"is_main"`
 }
 
 func (s ReqContext) Copy() ReqContext {
 	return ReqContext{
 		ID: s.ID, IDS: s.IDS, UserID: s.UserID, EntID: s.EntID, OrgID: s.OrgID,
-		MakerID: s.MakerID, MakerType: s.MakerType,
-		Page: s.Page, PageSize: s.PageSize, Q: s.Q,
+		PageID: s.PageID,
+		Page:   s.Page, PageSize: s.PageSize, Q: s.Q,
 		Command: s.Command, Rule: s.Rule,
 		URI: s.URI, Method: s.Method,
 		Condition: s.Condition, MainEntity: s.MainEntity, Data: s.Data,
@@ -86,9 +87,9 @@ func initActionRule() map[string]IActionRule {
 	return make(map[string]IActionRule)
 }
 
-func GetActionRule(action string) (IActionRule, bool) {
-	action = strings.ToLower(action)
-	if r, ok := _action_rule[action]; ok {
+func GetActionRule(domain, rule string) (IActionRule, bool) {
+	key := fmt.Sprintf("%s:%s", strings.ToLower(domain), strings.ToLower(rule))
+	if r, ok := _action_rule[key]; ok {
 		return r, ok
 	}
 	return nil, false
@@ -97,7 +98,8 @@ func RegisterActionRule(rules ...IActionRule) {
 	if len(rules) > 0 {
 		for i, _ := range rules {
 			rule := rules[i]
-			_action_rule[strings.ToLower(rule.GetRule().ID)] = rule
+			key := fmt.Sprintf("%s:%s", strings.ToLower(rule.GetRule().Domain), strings.ToLower(rule.GetRule().Code))
+			_action_rule[key] = rule
 		}
 	}
 
@@ -105,5 +107,6 @@ func RegisterActionRule(rules ...IActionRule) {
 
 // 注册器
 type RuleRegister struct {
-	ID string
+	Code   string
+	Domain string
 }

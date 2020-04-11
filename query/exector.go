@@ -3,6 +3,7 @@ package query
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -28,6 +31,11 @@ type IExector interface {
 	SetContext(context *context.Context) IExector
 	GetMainFrom() IQFrom
 }
+
+const REGEXP_FIELD_EXP_STRICT string = `\$\$([A-Za-z._]+[0-9A-Za-z]*)`
+const REGEXP_FIELD_EXP string = `([A-Za-z._]+[0-9A-Za-z]*)`
+const REGEXP_VAR_EXP string = `{([A-Za-z._]+[0-9A-Za-z]*)}`
+
 type oqlEntity struct {
 	Alia     string
 	IsMain   bool
@@ -219,10 +227,10 @@ func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) 
 		m.parseWhereField(v)
 	}
 	for _, v := range m.orders {
-		m.parseOrderField(v)
+		v.Expr = m.replaceFieldString(v.Query)
 	}
 	for _, v := range m.groups {
-		m.parseGroupField(v)
+		v.Expr = m.replaceFieldString(v.Query)
 	}
 	//build
 
@@ -233,7 +241,12 @@ func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) 
 	if whereExpr, whereArgs, tag := m.buildWheres(m.wheres); tag > 0 {
 		// 上下文替换
 		if m.context != nil {
-			whereExpr = m.context.ValueReplace(whereExpr)
+			r, _ := regexp.Compile(REGEXP_VAR_EXP)
+			matched := r.FindAllStringSubmatch(whereExpr, -1)
+			for _, match := range matched {
+				v := m.context.GetValue(utils.SnakeString(match[1]))
+				whereExpr = strings.ReplaceAll(whereExpr, match[0], "'"+v+"'")
+			}
 		}
 		queryDB = queryDB.Where(whereExpr, whereArgs...)
 	}
@@ -244,7 +257,7 @@ func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) 
 
 ///=============== build
 func (m *exector) buildFroms(mysql *repositories.MysqlRepo) *gorm.DB {
-	parts := []string{}
+	parts := make([]string, 0)
 	for _, v := range m.froms {
 		parts = append(parts, v.Expr)
 	}
@@ -260,42 +273,68 @@ func (m *exector) buildSelects(queryDB *gorm.DB) *gorm.DB {
 	queryDB = queryDB.Select(selects)
 	return queryDB
 }
+func (m *exector) getWhereArgs(where IQWhere) ([]interface{}) {
+	if where == nil || len(where.GetArgs()) <= 0 {
+		return nil
+	}
+	args := where.GetArgs()
+	for i, item := range args {
+		if where.GetDataType() == WHERE_TYPE_ENUM || where.GetDataType() == WHERE_TYPE_REF || where.GetDataType() == "" {
+			if v, ok := item.(map[string]interface{}); ok {
+				if v["_isRefObject"] != nil && v["id"] != nil {
+					args[i] = v["id"]
+				}
+				if v["_isEnumObject"] != nil && v["id"] != nil {
+					args[i] = v["id"]
+				}
+			}
+		} else if where.GetDataType() == WHERE_TYPE_DATE {
+			args[i] = md.CreateTime(item).Format(md.Layout_YYYYMMDD)
+		} else if where.GetDataType() == WHERE_TYPE_DATETIME {
+			args[i] = md.CreateTime(item).Format(md.Layout_YYYYMMDDHHIISS)
+		}
+	}
+	return args
+}
 func (m *exector) buildWheres(wheres []*qWhere) (string, []interface{}, int) {
-	if wheres == nil || len(wheres) == 0 {
+	if len(wheres) == 0 {
 		return "", nil, 0
 	}
 	tag := 0
-	exprs := []string{}
-	args := []interface{}{}
-	if wheres != nil && len(wheres) > 0 {
-		for _, v := range wheres {
-			subExpr, subArgs, subTag := m.buildWheres(v.Children)
-			tag += subTag
-			if v.Expr != "" { //当前节点加上子节点
-				if len(exprs) > 0 {
-					exprs = append(exprs, " ", v.Logical, " ")
-				}
-				if subTag > 0 {
-					// (a=b and (a=1 or a=2))
-					exprs = append(exprs, "((", v.Expr, ") ", v.Logical, " ", subExpr, ")")
-					args = append(args, v.Args...)
-					args = append(args, subArgs...)
-				} else {
-					exprs = append(exprs, "(", v.Expr, ")")
-					args = append(args, v.Args...)
-				}
-				tag += 1
-			} else if subTag > 0 { //仅仅有子节点
-				if len(exprs) > 0 {
-					exprs = append(exprs, " ", v.Logical, " ")
-				}
-				if subTag > 1 {
-					exprs = append(exprs, "(", subExpr, ")")
-				} else {
-					exprs = append(exprs, subExpr)
-				}
-				args = append(args, subArgs...)
+	exprs := make([]string, 0)
+	args := make([]interface{}, 0)
+
+	for _, v := range wheres {
+		subExpr, subArgs, subTag := m.buildWheres(v.Children)
+		tag += subTag
+		//当前节点加上子节点条件
+		if v.Expr != "" {
+			if len(exprs) > 0 {
+				exprs = append(exprs, " ", v.Logical, " ")
 			}
+			//如果有子条件，则需要把子条件也加入到条件集合中
+			if subExpr != "" {
+				// (a=b and (a=1 or a=2))
+				exprs = append(exprs, "((", v.Expr, ") ", v.Logical, " ", subExpr, ")")
+				args = append(args, m.getWhereArgs(v)...)
+				args = append(args, subArgs...)
+			} else {
+				//没有子条件时，就只加当前条件
+				exprs = append(exprs, "(", v.Expr, ")")
+				args = append(args, m.getWhereArgs(v)...)
+			}
+			tag += 1
+		} else if subExpr != "" { //仅仅有子节点
+			if len(exprs) > 0 {
+				exprs = append(exprs, " ", v.Logical, " ")
+			}
+			//如果子条件多于一个，则需要用括号包裹起来
+			if subTag > 1 {
+				exprs = append(exprs, "(", subExpr, ")")
+			} else {
+				exprs = append(exprs, subExpr)
+			}
+			args = append(args, subArgs...)
 		}
 	}
 	return strings.Join(exprs, ""), args, tag
@@ -367,18 +406,40 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 	}
 	return queryDB
 }
+func (m *exector) replaceFieldString(expr string) string {
+	if expr == "" {
+		return expr
+	}
+	tag := false
+	//先使用 严格模式，如:$$ID > 0
+	r, _ := regexp.Compile(REGEXP_FIELD_EXP_STRICT)
+	matched := r.FindAllStringSubmatch(expr, -1)
+	for _, match := range matched {
+		tag = true
+		field := m.parseField(match[1])
+		if field != nil {
+			expr = strings.ReplaceAll(expr, match[0], fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
+		}
+	}
+	if !tag {
+		//使用字段模式，如:ID >0
+		r, _ = regexp.Compile(REGEXP_FIELD_EXP)
+		matched := r.FindAllStringSubmatch(expr, -1)
+		for _, match := range matched {
+			tag = true
+			field := m.parseField(match[1])
+			if field != nil {
+				expr = strings.ReplaceAll(expr, match[0], fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
+			}
+		}
+	}
+	return expr
+}
 
 ///=============== parse
 func (m *exector) parseWhereField(value *qWhere) {
-	if value.Query != "" {
-		parts := strings.Split(strings.TrimSpace(value.Query), " ")
-		field := m.parseField(parts[0])
-		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
-		}
-		value.Expr = strings.Join(parts, " ")
-	}
-	if value.Children != nil && len(value.Children) > 0 {
+	value.Expr = m.replaceFieldString(value.Query)
+	if len(value.Children) > 0 {
 		for _, v := range value.Children {
 			m.parseWhereField(v)
 		}
@@ -386,7 +447,7 @@ func (m *exector) parseWhereField(value *qWhere) {
 }
 func (m *exector) parseFromField(value *oqlFrom) {
 	items := strings.Split(strings.TrimSpace(value.Query), ",")
-	strs := []string{}
+	strs := make([]string, 0)
 	for _, item := range items {
 		parts := strings.Split(strings.TrimSpace(item), " ")
 		if len(parts) == 1 {
@@ -399,47 +460,7 @@ func (m *exector) parseFromField(value *oqlFrom) {
 	value.Expr = strings.Join(strs, ",")
 }
 func (m *exector) parseSelectField(value *oqlSelect) {
-	items := strings.Split(strings.TrimSpace(value.Query), ",")
-	strs := []string{}
-	for _, item := range items {
-		parts := strings.Split(strings.TrimSpace(item), " ")
-		if len(parts) < 2 {
-			parts = append(parts, "as", strings.ToLower(strings.Replace(parts[0], ".", "_", -1)))
-		}
-		field := m.parseField(parts[0])
-		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
-		}
-		strs = append(strs, strings.Join(parts, " "))
-	}
-	value.Expr = strings.Join(strs, ",")
-}
-
-func (m *exector) parseGroupField(value *oqlGroup) {
-	items := strings.Split(strings.TrimSpace(value.Query), ",")
-	strs := []string{}
-	for _, item := range items {
-		field := m.parseField(strings.TrimSpace(item))
-		if field != nil {
-			strs = append(strs, fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
-		} else {
-			strs = append(strs, item)
-		}
-	}
-	value.Expr = strings.Join(strs, ",")
-}
-func (m *exector) parseOrderField(value *oqlOrder) {
-	items := strings.Split(strings.TrimSpace(value.Query), ",")
-	strs := []string{}
-	for _, item := range items {
-		parts := strings.Split(strings.TrimSpace(item), " ")
-		field := m.parseField(parts[0])
-		if field != nil {
-			parts[0] = fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName)
-		}
-		strs = append(strs, strings.Join(parts, " "))
-	}
-	value.Expr = strings.Join(strs, ",")
+	value.Expr = m.replaceFieldString(value.Query)
 }
 
 // 解析实体
@@ -529,6 +550,7 @@ func (m *exector) Select(query string, args ...interface{}) IExector {
 // fieldA =?
 // fieldB =''
 // FieldC is null
+// ($$FieldA +$$FieldB) >?
 func (m *exector) Where(query string, args ...interface{}) IQWhere {
 	item := &qWhere{Query: query, Args: args, Logical: "and"}
 	m.wheres = append(m.wheres, item)

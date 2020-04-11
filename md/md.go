@@ -134,7 +134,7 @@ func (s *md) dataTypeOf(field *gorm.StructField) string {
 			sqlType = "string"
 		}
 	}
-	if sqlType==""{
+	if sqlType == "" {
 		sqlType = "string"
 	}
 	return sqlType
@@ -290,10 +290,9 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	if !InitMD_Completed {
 		InitMD_Completed = true
 		mds := []interface{}{
-			&MDEntity{}, &MDField{}, &MDTag{}, &MDEnum{},
-			&MDActionCommand{}, &MDActionRule{}, &MDActionMaker{},
-			&MDPage{}, &MDPageView{}, &MDPageWidget{},
-			&MDPart{}, &MDPartProps{},
+			&MDEntity{}, &MDField{}, &MDEnum{},
+			&MDActionCommand{}, &MDActionRule{},
+			&MDPage{}, &MDPageView{},
 		}
 		needDb := make([]interface{}, 0)
 		for _, v := range mds {

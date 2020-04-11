@@ -80,8 +80,8 @@ func getDsnString(inDb bool) string {
 			buf.WriteByte(':')
 			buf.WriteString(configs.Default.Db.Password)
 		}
+		buf.WriteByte('@')
 		if configs.Default.Db.Host != "" {
-			buf.WriteByte('@')
 			buf.WriteString(configs.Default.Db.Host)
 			if configs.Default.Db.Port != "" {
 				buf.WriteByte(':')
@@ -97,7 +97,34 @@ func getDsnString(inDb bool) string {
 			buf.WriteString("?database=master")
 		}
 		str = buf.String()
-	} else {
+		return str
+	}
+	if configs.Default.Db.Driver == Driver_OCI8 {
+		//[username/[password]@]host[:port][/service_name][?param1=value1&...&paramN=valueN]
+		var buf bytes.Buffer
+		buf.WriteString(configs.Default.Db.Username)
+		if configs.Default.Db.Password != "" {
+			buf.WriteByte('/')
+			buf.WriteString(configs.Default.Db.Password)
+		}
+		buf.WriteByte('@')
+		if configs.Default.Db.Host != "" {
+			buf.WriteString(configs.Default.Db.Host)
+			if configs.Default.Db.Port != "" {
+				buf.WriteByte(':')
+				buf.WriteString(configs.Default.Db.Port)
+			} else {
+				buf.WriteString(":1521")
+			}
+		}
+		if configs.Default.Db.Database != "" && inDb {
+			buf.WriteString("/")
+			buf.WriteString(configs.Default.Db.Database)
+		}
+		str = buf.String()
+		return str
+	}
+	{
 		config := mysql.Config{
 			User:   configs.Default.Db.Username,
 			Passwd: configs.Default.Db.Password, Net: "tcp", Addr: configs.Default.Db.Host,

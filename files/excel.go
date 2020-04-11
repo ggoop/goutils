@@ -1,6 +1,7 @@
 package files
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/shopspring/decimal"
 	"path"
@@ -36,8 +37,10 @@ type ExcelCell struct {
 	Value interface{}
 }
 type ToExcel struct {
-	Columns []ExcelColumn
-	Datas   [][]ExcelCell
+	FileName string
+	Dir      string
+	Columns  []ExcelColumn
+	Datas    [][]ExcelCell
 }
 type ExcelSv struct {
 }
@@ -53,10 +56,7 @@ func GetMapStringValue(key string, row map[string]interface{}) string {
 	if v == nil {
 		return ""
 	}
-	if v, ok := v.(string); ok {
-		return v
-	}
-	return ""
+	return utils.ToString(v)
 }
 func GetMapIntValue(key string, row map[string]interface{}) int {
 	v := GetMapValue(key, row)
@@ -68,6 +68,14 @@ func GetMapIntValue(key string, row map[string]interface{}) int {
 
 func GetMapSBoolValue(key string, row map[string]interface{}) md.SBool {
 	return md.SBool_Parse(GetMapValue(key, row))
+}
+func GetMapSJsonValue(key string, row map[string]interface{}) md.SJson {
+	str := GetMapStringValue(key, row)
+	var jsonData interface{}
+	if err := json.Unmarshal([]byte(str), &jsonData); err != nil {
+		glog.Error(err)
+	}
+	return md.SJson_Parse(jsonData)
 }
 func GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
 	v := GetMapValue(key, row)
@@ -253,9 +261,13 @@ func (s *ExcelSv) ToExcel(data *ToExcel) (*FileData, error) {
 			}
 		}
 	}
-	fileData := FileData{}
-	fileData.FileName = fmt.Sprintf("%s.%s", utils.GUID(), "xlsx")
-	fileData.Dir = path.Join(configs.Default.App.Storage, "export", md.NewTime().Format("200601"))
+	fileData := FileData{Dir: data.Dir, FileName: data.FileName}
+	if fileData.FileName == "" {
+		fileData.FileName = fmt.Sprintf("%s.%s", utils.GUID(), "xlsx")
+	}
+	if fileData.Dir == "" {
+		fileData.Dir = path.Join(configs.Default.App.Storage, "export", md.NewTime().Format("200601"))
+	}
 	utils.CreatePath(fileData.Dir)
 	fileData.FullPath = utils.JoinCurrentPath(path.Join(fileData.Dir, fileData.FileName))
 	if err := xlsx.SaveAs(fileData.FullPath); err != nil {
