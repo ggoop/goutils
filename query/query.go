@@ -34,7 +34,6 @@ type Query struct {
 	Entry       string        `gorm:"size:200;name:入口"  json:"entry"`
 	Memo        string        `gorm:"name:备注"  json:"memo"`
 	PageSize    int           `gorm:"default:30;name:每页显示记录数" json:"page_size"`
-	Fields      []QueryField  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:QueryID;name:字段集合" json:"fields"`
 	Columns     []QueryColumn `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:栏目集合" json:"columns"`
 	Orders      []QueryOrder  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:排序集合" json:"orders"`
 	Wheres      []QueryWhere  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:OwnerID;name:条件集合" json:"wheres"`
@@ -47,30 +46,9 @@ func (s *Query) MD() *md.Mder {
 	return &md.Mder{ID: "query.query", Domain: md_domain, Name: "查询"}
 }
 
-type QueryField struct {
-	md.Model
-	QueryID      string   `gorm:"size:50;name:查询ID" json:"query_id"`
-	Query        *Query   `gorm:"name:查询" json:"case_id"`
-	DataType     string   `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
-	DataSourse   string   `gorm:"name:数据来源" json:"data_sourse"`
-	DefaultValue md.SJson `gorm:"name:默认值" json:"default_value"`
-	Field        string   `gorm:"size:50;name:字段" json:"field"`
-	Expr         string   `gorm:"size:200;name:表达式" json:"expr"` //字段表达式，如：$$ID+'-'+$$Code
-	Group        string   `gorm:"name:分组" json:"group"`
-	Title        string   `gorm:"name:显示名称" json:"title"`
-	Memo         string   `gorm:"name:备注" json:"memo"`
-	Hidden       md.SBool `gorm:"default:false;name:隐藏" json:"hidden"`
-	IsColumn     md.SBool `gorm:"default:true;name:栏目" json:"is_column"`
-	IsOrder      md.SBool `gorm:"default:true;name:排序" json:"is_order"`
-	IsWhere      md.SBool `gorm:"default:true;name:条件" json:"is_where"`
-}
-
-func (s *QueryField) MD() *md.Mder {
-	return &md.Mder{ID: "query.field", Domain: md_domain, Name: "查询字段"}
-}
-
 type QueryColumn struct {
 	md.Model
+	QueryID   string   `gorm:"size:50;name:查询" json:"query_id"`
 	OwnerID   string   `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType string   `gorm:"size:50;name:所属类型" json:"owner_type"`
 	Field     string   `gorm:"size:50;name:字段" json:"field"`
@@ -78,7 +56,8 @@ type QueryColumn struct {
 	Name      string   `gorm:"size:50;name:栏目编码" json:"name"`
 	Title     string   `gorm:"name:显示名称" json:"title"`
 	Width     string   `gorm:"name:宽度" json:"width"`
-	Tags      string   `gorm:"name:标签" json:"tags"` //is_q
+	Tags      string   `gorm:"name:标签" json:"tags"`                //is_q
+	DataType  string   `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
 	KeyField  md.SBool `gorm:"default:false;name:是主键字段" json:"key_field"`
 	CodeField md.SBool `gorm:"default:false;name:是编码字段" json:"code_field"`
 	NameField md.SBool `gorm:"default:false;name:是名称字段" json:"name_field"`
@@ -95,6 +74,7 @@ func (s *QueryColumn) MD() *md.Mder {
 
 type QueryOrder struct {
 	md.Model
+	QueryID   string   `gorm:"size:50;name:查询" json:"query_id"`
 	OwnerID   string   `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType string   `gorm:"size:50;name:所属类型" json:"owner_type"`
 	Field     string   `gorm:"size:50;name:字段"  json:"field"`
@@ -114,6 +94,7 @@ func (s *QueryOrder) MD() *md.Mder {
 
 type QueryWhere struct {
 	md.Model
+	QueryID    string        `gorm:"size:50;name:查询" json:"query_id"`
 	OwnerID    string        `gorm:"size:50;name:所属ID" json:"owner_id"`
 	OwnerType  string        `gorm:"size:50;name:所属类型" json:"owner_type"`
 	ParentID   string        `gorm:"size:50" json:"parent_id"`

@@ -34,6 +34,15 @@ type ResContext struct {
 	Data  utils.Map
 	Error error
 }
+
+func (s *ResContext) SetData(name string, value interface{}) *ResContext {
+	if s.Data == nil {
+		s.Data = utils.Map{}
+	}
+	s.Data[name] = value
+	return s
+}
+
 type PageViewDTO struct {
 	Data       interface{} `json:"data"`
 	Code       string      `json:"code"`

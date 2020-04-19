@@ -29,6 +29,8 @@ type IExector interface {
 	Group(query string, args ...interface{}) IExector
 	Page(page, pageSize int) IExector
 	SetContext(context *context.Context) IExector
+	SetFieldDataTypes(dataTypes map[string]string) IExector
+	SetFieldDataType(field, dataType string) IExector
 	GetMainFrom() IQFrom
 }
 
@@ -92,29 +94,31 @@ type oqlGroup struct {
 }
 
 type exector struct {
-	entities map[string]*oqlEntity
-	fields   map[string]*oqlField
-	froms    []*oqlFrom
-	selects  []*oqlSelect
-	joins    []*oqlJoin
-	wheres   []*qWhere
-	orders   []*oqlOrder
-	groups   []*oqlGroup
-	page     int
-	pageSize int
-	context  *context.Context
+	entities  map[string]*oqlEntity
+	fields    map[string]*oqlField
+	dataTypes map[string]string
+	froms     []*oqlFrom
+	selects   []*oqlSelect
+	joins     []*oqlJoin
+	wheres    []*qWhere
+	orders    []*oqlOrder
+	groups    []*oqlGroup
+	page      int
+	pageSize  int
+	context   *context.Context
 }
 
 func NewExector(query string) IExector {
 	exec := &exector{
-		entities: make(map[string]*oqlEntity),
-		fields:   make(map[string]*oqlField),
-		froms:    make([]*oqlFrom, 0),
-		selects:  make([]*oqlSelect, 0),
-		joins:    make([]*oqlJoin, 0),
-		wheres:   make([]*qWhere, 0),
-		orders:   make([]*oqlOrder, 0),
-		groups:   make([]*oqlGroup, 0),
+		entities:  make(map[string]*oqlEntity),
+		fields:    make(map[string]*oqlField),
+		dataTypes: make(map[string]string),
+		froms:     make([]*oqlFrom, 0),
+		selects:   make([]*oqlSelect, 0),
+		joins:     make([]*oqlJoin, 0),
+		wheres:    make([]*qWhere, 0),
+		orders:    make([]*oqlOrder, 0),
+		groups:    make([]*oqlGroup, 0),
 	}
 	exec.From(query)
 	return exec
@@ -125,6 +129,17 @@ func (m *exector) Page(page, pageSize int) IExector {
 	return m
 }
 
+func (m *exector) SetFieldDataTypes(dataTypes map[string]string) IExector {
+	if dataTypes == nil {
+		dataTypes = make(map[string]string)
+	}
+	m.dataTypes = dataTypes
+	return m
+}
+func (m *exector) SetFieldDataType(field, dataType string) IExector {
+	m.dataTypes[field] = dataType
+	return m
+}
 func (m *exector) formatEntity(entity *md.MDEntity) *oqlEntity {
 	e := oqlEntity{Entity: entity}
 	return &e
@@ -160,19 +175,23 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 	columnTypeMap := map[string]string{}
 	for _, c := range columnTypes {
 		columnTypeMap[c.Name()] = c.DatabaseTypeName()
+		if ct, ok := m.dataTypes[c.Name()]; ok && ct != "" {
+			columnTypeMap[c.Name()] = ct
+		}
 	}
+
 	results := make([]map[string]interface{}, 0)
 	for rows.Next() {
 		values := make([]interface{}, len(columns))
 		for index, column := range columns {
-			dbType := columnTypeMap[column]
+			dbType := strings.ToUpper(columnTypeMap[column])
 			switch dbType {
-			case "VARCHAR", "TEXT", "NVARCHAR":
+			case "VARCHAR", "TEXT", "NVARCHAR", "STRING":
 				var ignored sql.NullString
 				values[index] = &ignored
 				break
-			case "BOOL":
-				var ignored sql.NullBool
+			case "BOOL", "BOOLEAN":
+				var ignored md.SBool
 				values[index] = &ignored
 				break
 			case "INT", "BIGINT", "TINYINT":
@@ -183,7 +202,7 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				var ignored decimal.Decimal
 				values[index] = &ignored
 				break
-			case "TIMESTAMP":
+			case "TIMESTAMP", "DATE", "DATETIME":
 				var ignored md.Time
 				values[index] = &ignored
 				break
@@ -199,8 +218,8 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 		for index, column := range columns {
 			if v, ok := values[index].(*sql.NullString); ok {
 				resultItem[column] = v.String
-			} else if v, ok := values[index].(*sql.NullBool); ok {
-				resultItem[column] = v.Bool
+			} else if v, ok := values[index].(*md.SBool); ok {
+				resultItem[column] = v
 			} else if v, ok := values[index].(*sql.NullInt64); ok {
 				resultItem[column] = v.Int64
 			} else if v, ok := values[index].(*decimal.Decimal); ok {

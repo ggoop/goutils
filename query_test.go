@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"regexp"
 	"testing"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/query"
 	"github.com/ggoop/goutils/repositories"
+	"github.com/ggoop/goutils/utils"
 )
 
 
@@ -24,13 +24,13 @@ func (s *testTag) MD() *md.Mder {
 	return &md.Mder{ID: "test.tag", Domain: "test", Name: "标签"}
 }
 func  TestQuerySJson_Parse(t *testing.T) {
-	str:="true"
-	var jsonData interface{}
-	if err := json.Unmarshal([]byte(str), &jsonData); err != nil {
-		glog.Error(err)
-	}
-	json:= md.SJson_Parse(jsonData)
-	glog.Error(json)
+	str:="OPDKDIPFD_RangeDocSSo"
+
+
+
+	aaa:=utils.SnakeString(str)
+
+	glog.Error(aaa)
 }
 func _TestQueryMigrate(t *testing.T) {
 	db := repositories.Default()

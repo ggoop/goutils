@@ -35,13 +35,16 @@ func (s *MDEntity) GetField(code string) *MDField {
 	if s.cache == nil {
 		s.cache = make(map[string]MDField)
 	}
-	code = strings.ToLower(code)
+
 	if s.Fields != nil && len(s.Fields) > 0 && len(s.cache) == 0 {
-		for _, v := range s.Fields {
-			s.cache[strings.ToLower(v.Code)] = v
+		for i, v := range s.Fields {
+			s.cache[strings.ToLower(v.Code)] = s.Fields[i]
+			if v.DbName != "" {
+				s.cache[strings.ToLower(v.DbName)] = s.Fields[i]
+			}
 		}
 	}
-	if v, ok := s.cache[code]; ok {
+	if v, ok := s.cache[strings.ToLower(code)]; ok {
 		return &v
 	}
 	return nil

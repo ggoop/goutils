@@ -58,7 +58,9 @@ func (s *QueryCase) prepareCase() {
 	if len(s.Columns) == 0 && s.Query != nil {
 		s.Columns = make([]QueryColumn, 0)
 		for _, v := range s.Query.Columns {
-			s.Columns = append(s.Columns, v)
+			if v.IsDefault.IsTrue() {
+				s.Columns = append(s.Columns, v)
+			}
 		}
 	}
 	//默认栏目名称
@@ -71,7 +73,9 @@ func (s *QueryCase) prepareCase() {
 	if len(s.Orders) == 0 && s.Query != nil {
 		s.Orders = make([]QueryOrder, 0)
 		for _, v := range s.Query.Orders {
-			s.Orders = append(s.Orders, v)
+			if v.IsDefault.IsTrue() {
+				s.Orders = append(s.Orders, v)
+			}
 		}
 	}
 	if s.Page <= 0 {
@@ -120,6 +124,9 @@ func (s *QueryCase) GetExector() IExector {
 			exector.Select("$$" + v.Field + " as " + v.Name)
 		} else if v.Field != "" {
 			exector.Select("$$" + v.Field)
+		}
+		if v.Name != "" && v.DataType != "" {
+			exector.SetFieldDataType(v.Name, v.DataType)
 		}
 	}
 	for _, v := range s.Wheres {
