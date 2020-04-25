@@ -126,3 +126,24 @@ func GetEntity(id string) *MDEntity {
 	}
 	return nil
 }
+
+type MDFilter struct {
+	ID         string `gorm:"primary_key;size:50" json:"id"`
+	CreatedAt  Time   `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt  *Time  `gorm:"name:更新时间" json:"updated_at"`
+	OwnerID    string `gorm:"size:50;name:拥有者ID" json:"owner_id"`   //查询
+	OwnerType  string `gorm:"size:50;name:拥有者类型" json:"owner_type"` //查询
+	OwnerField string `gorm:"size:50;name:所属字段" json:"owner_field"` //字段名称
+	Field      string `gorm:"size:50;name:字段" json:"field"`         //如果#开始，则表示标记，需要使用表达式
+	Expr       string `gorm:"size:200;name:表达式" json:"expr"`
+	Title      string `gorm:"name:显示名称" json:"title"`
+	DataType   string `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime
+	DataSource string `gorm:"name:数据来源" json:"data_source"`       //条件：where| 常量：const| 变量：var|context:上下文
+	Operator   string `gorm:"size:50;name:操作符号" json:"operator"`
+	Value      SJson  `gorm:"name:值" json:"value"`
+	Enabled    SBool  `gorm:"default:true;name:启用" json:"enabled"`
+}
+
+func (s *MDFilter) MD() *Mder {
+	return &Mder{ID: "md.filter", Domain: md_domain, Name: "限制条件"}
+}

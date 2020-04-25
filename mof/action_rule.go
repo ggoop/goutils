@@ -13,22 +13,23 @@ import (
 请求通用类
 */
 type ReqContext struct {
-	PageID     string      `json:"page_id"` //页面ID
-	ID         string      `json:"id"`
-	IDS        []string    `json:"ids"`
-	UserID     string      `json:"user_id"` //用户ID
-	EntID      string      `json:"ent_id"`  //企业ID
-	OrgID      string      `json:"org_id"`  //组织ID
-	Page       int         `json:"page"`
-	PageSize   int         `json:"page_size"`
-	Command    string      `json:"command"` // 动作编码
-	Rule       string      `json:"rule"`    //规则编码
-	URI        string      `json:"uri"`
-	Method     string      `json:"method"`
-	Q          string      `json:"q"`
-	Condition  interface{} `json:"condition"`
-	MainEntity string      `json:"main_entity"`
-	Data       interface{} `json:"data"` //数据
+	PageID     string      `json:"page_id" form:"page_id"` //页面ID
+	ID         string      `json:"id" form:"id"`
+	IDS        []string    `json:"ids" form:"ids"`
+	UserID     string      `json:"user_id" form:"user_id"` //用户ID
+	EntID      string      `json:"ent_id" form:"ent_id"`   //企业ID
+	OrgID      string      `json:"org_id" form:"org_id"`   //组织ID
+	Page       int         `json:"page" form:"page"`
+	PageSize   int         `json:"page_size" form:"page_size"`
+	Command    string      `json:"command" form:"command"` // 动作编码
+	Rule       string      `json:"rule" form:"rule"`       //规则编码
+	URI        string      `json:"uri" form:"uri"`
+	Method     string      `json:"method" form:"method"`
+	Q          string      `json:"q" form:"q"`
+	Condition  interface{} `json:"condition" form:"condition"`
+	MainEntity string      `json:"main_entity" form:"main_entity"`
+	Data       interface{} `json:"data" form:"data"` //数据
+	Tag        string      `json:"tag" form:"tag"`
 }
 type ResContext struct {
 	Data  utils.Map
@@ -116,6 +117,7 @@ func RegisterActionRule(rules ...IActionRule) {
 
 // 注册器
 type RuleRegister struct {
+	URI    string
 	Code   string
 	Domain string
 }

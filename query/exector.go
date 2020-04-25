@@ -20,6 +20,7 @@ import (
 type IExector interface {
 	PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error)
 	Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error)
+	Take(mysql *repositories.MysqlRepo) (map[string]interface{}, error)
 	Count(mysql *repositories.MysqlRepo) (int, error)
 	Select(query string, args ...interface{}) IExector
 	Where(query string, args ...interface{}) IQWhere
@@ -31,6 +32,7 @@ type IExector interface {
 	SetContext(context *context.Context) IExector
 	SetFieldDataTypes(dataTypes map[string]string) IExector
 	SetFieldDataType(field, dataType string) IExector
+	Clone() IExector
 	GetMainFrom() IQFrom
 }
 
@@ -123,6 +125,10 @@ func NewExector(query string) IExector {
 	exec.From(query)
 	return exec
 }
+func (m *exector) Clone() IExector {
+	n := *m
+	return &n
+}
 func (m *exector) Page(page, pageSize int) IExector {
 	m.page = page
 	m.pageSize = pageSize
@@ -158,6 +164,18 @@ func (m *exector) Count(mysql *repositories.MysqlRepo) (int, error) {
 		}
 		return count, nil
 	}
+}
+func (m *exector) Take(mysql *repositories.MysqlRepo) (map[string]interface{}, error) {
+	m.page = 1
+	m.pageSize = 1
+	datas, err := m.Query(mysql)
+	if err != nil {
+		return nil, err
+	}
+	if len(datas) > 0 {
+		return datas[0], nil
+	}
+	return nil, nil
 }
 func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error) {
 	q, err := m.PrepareQuery(mysql)

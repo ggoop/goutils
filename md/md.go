@@ -296,7 +296,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 	if !InitMD_Completed {
 		InitMD_Completed = true
 		mds := []interface{}{
-			&MDEntity{}, &MDField{}, &MDEnum{},
+			&MDEntity{}, &MDField{}, &MDEnum{}, &MDFilter{},
 			&MDActionCommand{}, &MDActionRule{},
 			&MDPage{}, &MDPageView{},
 		}

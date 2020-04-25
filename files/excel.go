@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/shopspring/decimal"
+	"io"
 	"path"
 
 	"github.com/ggoop/goutils/configs"
@@ -72,8 +73,10 @@ func GetMapSBoolValue(key string, row map[string]interface{}) md.SBool {
 func GetMapSJsonValue(key string, row map[string]interface{}) md.SJson {
 	str := GetMapStringValue(key, row)
 	var jsonData interface{}
-	if err := json.Unmarshal([]byte(str), &jsonData); err != nil {
-		glog.Error(err)
+	if str != "" {
+		if err := json.Unmarshal([]byte(str), &jsonData); err != nil {
+			jsonData = str
+		}
 	}
 	return md.SJson_Parse(jsonData)
 }
@@ -133,11 +136,21 @@ func GetMapValue(key string, row map[string]interface{}) interface{} {
 	}
 	return nil
 }
+func (s *ExcelSv) GetExcelDatasByReader(r io.Reader, sheetNames ...string) ([]ImportData, error) {
+	xlsx, err := excelize.OpenReader(r)
+	if err != nil {
+		return nil, err
+	}
+	return s.toExcelDatas(xlsx, sheetNames...)
+}
 func (s *ExcelSv) GetExcelDatas(filePath string, sheetNames ...string) ([]ImportData, error) {
 	xlsx, err := excelize.OpenFile(filePath)
 	if err != nil {
 		return nil, err
 	}
+	return s.toExcelDatas(xlsx, sheetNames...)
+}
+func (s *ExcelSv) toExcelDatas(xlsx *excelize.File, sheetNames ...string) ([]ImportData, error) {
 	rtnDatas := make([]ImportData, 0)
 	if len(sheetNames) == 0 || sheetNames[0] == "*" {
 		for _, sheetName := range xlsx.GetSheetMap() {
@@ -157,6 +170,13 @@ func (s *ExcelSv) GetExcelDatas(filePath string, sheetNames ...string) ([]Import
 		}
 	}
 	return rtnDatas, nil
+}
+func (s *ExcelSv) GetExcelDataByReader(r io.Reader) (data ImportData, err error) {
+	xlsx, err := excelize.OpenReader(r)
+	if err != nil {
+		return data, err
+	}
+	return s.getSheetData(xlsx, xlsx.GetSheetName(xlsx.GetActiveSheetIndex()))
 }
 func (s *ExcelSv) GetExcelData(filePath string) (data ImportData, err error) {
 	xlsx, err := excelize.OpenFile(filePath)
