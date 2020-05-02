@@ -116,12 +116,12 @@ func (s *QueryCase) GetExector() IExector {
 	exector.SetContext(s.Context)
 	for _, v := range s.Columns {
 		if v.Expr != "" && v.Name != "" {
-			exector.Select(v.Expr + " as " + v.Name)
+			exector.Select(v.Expr + " as `" + v.Name + "`")
 		}
 		if v.Expr != "" {
 			exector.Select(v.Expr)
 		} else if v.Field != "" && v.Name != "" {
-			exector.Select("$$" + v.Field + " as " + v.Name)
+			exector.Select("$$" + v.Field + " as `" + v.Name + "`")
 		} else if v.Field != "" {
 			exector.Select("$$" + v.Field)
 		}

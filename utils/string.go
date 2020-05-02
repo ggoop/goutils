@@ -271,6 +271,18 @@ func FirstCaseToUpper(str string, first bool) string {
 		return temp[0] + upperStr
 	}
 }
+func StringSplitFormat(str string) string {
+	regExp := `[,|;|，|；\|]`
+	r, _ := regexp.Compile(regExp)
+	items := r.Split(str, -1)
+	newItems:=make([]string,0)
+	for _,item:=range items{
+		if item!=""{
+			newItems= append(newItems, item)
+		}
+	}
+	return strings.Join(newItems, ";")
+}
 
 // snake string, XxYy to xx_yy , XxYY to xx_yy
 func SnakeString(name string) string {

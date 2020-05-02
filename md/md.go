@@ -15,6 +15,7 @@ import (
 	"github.com/ggoop/goutils/repositories"
 )
 
+// 数据状态
 const (
 	//临时
 	STATE_TEMP = "temp"
@@ -27,6 +28,8 @@ const (
 	//正常的
 	STATE_NORMAL = "normal"
 )
+
+//元数据类型
 const (
 	//简单类型
 	TYPE_SIMPLE = "simple"
@@ -41,6 +44,21 @@ const (
 	// 视图
 	TYPE_VIEW = "view"
 )
+
+//字段数据类型
+const (
+	FIELD_TYPE_STRING   = "string"
+	FIELD_TYPE_INT      = "int"
+	FIELD_TYPE_BOOL     = "bool"
+	FIELD_TYPE_DECIMAL  = "decimal"
+	FIELD_TYPE_TEXT     = "text"
+	FIELD_TYPE_DATE     = "date"
+	FIELD_TYPE_DATETIME = "datetime"
+	FIELD_TYPE_XML      = "xml"
+	FIELD_TYPE_JSON     = "json"
+)
+
+//字段关联关系
 const (
 	KIND_TYPE_MANY_TO_MANT = "many_to_many"
 	KIND_TYPE_HAS_MANT     = "has_many"
@@ -61,6 +79,11 @@ type Mder struct {
 type md struct {
 	Value interface{}
 	db    *repositories.MysqlRepo
+}
+
+func CacheMD(db *repositories.MysqlRepo) {
+	mdCache = make(map[string]*MDEntity)
+	enumCache = make(map[string]MDEnum)
 }
 
 var InitMD_Completed bool

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/ggoop/goutils/glog"
@@ -11,19 +12,27 @@ import (
 	"github.com/ggoop/goutils/repositories"
 )
 
-
 type testTag struct {
-	ID   string `gorm:"primary_key;size:50" json:"id"`
-	Code string `gorm:"size:2"`
-	Name md.SBool
-	Json md.SJson
-	//Value []string `json:"value"`
+	ID    string `gorm:"primary_key;size:50" json:"id"`
+	Code  string `gorm:"size:2"`
+	Name  md.SBool
+	Json  md.SJson
+	Field md.MDField
 }
 
 func (s *testTag) MD() *md.Mder {
 	return &md.Mder{ID: "test.tag", Domain: "test", Name: "标签"}
 }
-func  TestQuerySJson_Parse(t *testing.T) {
+func TestSplitMatched(t *testing.T) {
+	REGEXP_VAR_EXP := `[,|;|，|；\|]`
+	str := "a1,b2;c33，e4；f55"
+	str="0|44"
+	r, _ := regexp.Compile(REGEXP_VAR_EXP)
+	matched_strict := r.Split(str, -1)
+	ss := strings.Join(matched_strict, ";")
+	t.Error(ss)
+}
+func _TestQuerySJson_Parse(t *testing.T) {
 	str := ""
 	var jsonData interface{}
 	if err := json.Unmarshal([]byte(str), &jsonData); err != nil {
@@ -33,10 +42,11 @@ func  TestQuerySJson_Parse(t *testing.T) {
 }
 func _TestQueryMigrate(t *testing.T) {
 	db := repositories.Default()
-	//md.Migrate(db, &testTag{})
+	md.InitMD_Completed = true
+	md.Migrate(db, &testTag{})
 
 	items := make([] testTag, 0)
-	item:=testTag{Json:md.SJson_Parse([]string{"fdsaf","fdsafddddd"})}
+	item := testTag{Json: md.SJson_Parse([]string{"fdsaf", "fdsafddddd"})}
 	//
 	db.Last(&item)
 	db.Find(&items)
@@ -59,7 +69,7 @@ func _TestExectorMatched(t *testing.T) {
 	matched := r.FindAllStringSubmatch(str, -1)
 	t.Error(matched)
 }
-func _TestQueryQuery(t *testing.T)  {
+func _TestQueryQuery(t *testing.T) {
 	db := repositories.Default()
 	exector := query.NewExector("test.tag")
 	exector.Select("ID").Select("Code")

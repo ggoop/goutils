@@ -122,7 +122,7 @@ func (t *SJson) Scan(v interface{}) error {
 	return nil
 }
 func (t SJson) GormDataType(d gorm.Dialect) string {
-	return "varchar(255)"
+	return "text"
 }
 func (t SJson) GetObject(obj interface{}) error {
 	return json.Unmarshal([]byte(t.jsonString), &obj)

@@ -9,7 +9,7 @@ func initData(db *repositories.MysqlRepo) {
 	//基础数据类型
 	items = append(items, MDEntity{ID: "string", Name: "字符", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
 	items = append(items, MDEntity{ID: "int", Name: "整数", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
-	items = append(items, MDEntity{ID: "boolean", Name: "布尔", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
+	items = append(items, MDEntity{ID: "bool", Name: "布尔", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
 	items = append(items, MDEntity{ID: "decimal", Name: "浮点数", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
 	items = append(items, MDEntity{ID: "text", Name: "文本", Type: TYPE_SIMPLE, Domain: md_domain, System: true})
 	items = append(items, MDEntity{ID: "date", Name: "日期", Type: TYPE_SIMPLE, Domain: md_domain, System: true})

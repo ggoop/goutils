@@ -23,12 +23,19 @@ func (s *MOFSv) getEntity(entityID string) md.MDEntity {
 	s.repo.Model(item).Order("id").Take(&item, "id=?", entityID)
 	return item
 }
-func (s *MOFSv) EntityToTables(items ...md.MDEntity) error {
+func (s *MOFSv) entityToTables(items []md.MDEntity, oldItems []md.MDEntity) error {
 	if items == nil || len(items) == 0 {
 		return nil
 	}
 	for i, _ := range items {
 		entity := items[i]
+		oldItem := md.MDEntity{}
+		for oi, ov := range oldItems {
+			if entity.ID == ov.ID {
+				oldItem = oldItems[oi]
+				break
+			}
+		}
 		if entity.Type != md.TYPE_ENTITY {
 			continue
 		}
@@ -36,7 +43,7 @@ func (s *MOFSv) EntityToTables(items ...md.MDEntity) error {
 			entity.TableName = strings.ReplaceAll(entity.ID, ".", "_")
 		}
 		if s.repo.Dialect().HasTable(entity.TableName) {
-			s.updateTable(entity)
+			s.updateTable(entity, oldItem)
 		} else {
 			s.createTable(entity)
 		}
@@ -70,21 +77,36 @@ func (s *MOFSv) createTable(item md.MDEntity) {
 func (s *MOFSv) quote(str string) string {
 	return "`" + str + "`"
 }
-func (s *MOFSv) updateTable(item md.MDEntity) {
+func (s *MOFSv) updateTable(item md.MDEntity, old md.MDEntity) {
 	//更新栏目
 	for i := range item.Fields {
 		field := item.Fields[i]
-		if field.DbName == "-" {
+		if field.DbName == "-" || field.DbName == "" {
 			continue
+		}
+		oldField := md.MDField{}
+		for oi, ov := range old.Fields {
+			if strings.ToLower(field.Code) == strings.ToLower(ov.Code) {
+				oldField = old.Fields[oi]
+				break
+			}
 		}
 		if !field.IsNormal {
 			continue
 		}
-		if s.repo.Dialect().HasColumn(item.TableName, field.DbName) {
-			continue
-		}
-		if err := s.repo.Exec(fmt.Sprintf("ALTER TABLE %v ADD %v;", s.quote(item.TableName), s.buildColumnNameString(field))).Error; err != nil {
-			glog.Error(err)
+		newString := s.buildColumnNameString(field)
+		if s.repo.Dialect().HasColumn(item.TableName, field.DbName) { //字段已存在
+			oldString := s.buildColumnNameString(oldField)
+			//修改字段类型、类型长度、默认值、注释
+			if oldString != newString {
+				if err := s.repo.Exec(fmt.Sprintf("ALTER TABLE %v MODIFY %v;", s.quote(item.TableName), newString)).Error; err != nil {
+					glog.Error(err)
+				}
+			}
+		} else { //新增字段
+			if err := s.repo.Exec(fmt.Sprintf("ALTER TABLE %v ADD %v;", s.quote(item.TableName), newString)).Error; err != nil {
+				glog.Error(err)
+			}
 		}
 	}
 }
@@ -97,10 +119,10 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 
 	*/
 	fieldStr := s.quote(item.DbName)
-	if item.IsPrimaryKey && item.TypeID == "string" {
-		fieldStr += " nvarchar(36)  not null"
-	} else if item.IsPrimaryKey && item.TypeID == "int" {
-		fieldStr += " bigint not null"
+	if item.IsPrimaryKey && item.TypeID == md.FIELD_TYPE_STRING {
+		fieldStr += " NVARCHAR(36)  NOT NULL"
+	} else if item.IsPrimaryKey && item.TypeID == md.FIELD_TYPE_INT {
+		fieldStr += " BIGINT NOT NULL"
 	} else if item.TypeID == "string" {
 		if item.Length <= 0 {
 			item.Length = 50
@@ -110,58 +132,50 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 		} else if item.Length >= 4000 {
 			fieldStr += " TEXT"
 		} else {
-			fieldStr += fmt.Sprintf(" nvarchar(%d)", item.Length)
+			fieldStr += fmt.Sprintf(" NVARCHAR(%d)", item.Length)
 		}
 
 		if !item.Nullable {
-			fieldStr += " not null"
+			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
 			fieldStr += " DEFAULT " + item.DefaultValue
 		}
-	} else if item.TypeID == "boolean" {
-		fieldStr += " bit not null"
-		if item.DefaultValue != "" {
-			fieldStr += " DEFAULT " + item.DefaultValue
-		} else {
-			fieldStr += " DEFAULT 0"
-		}
-	} else if item.TypeID == "datetime" {
-		fieldStr += " TIMESTAMP"
-		if !item.Nullable {
-			fieldStr += " not null"
-		}
-		if item.DefaultValue != "" {
-			fieldStr += " DEFAULT " + item.DefaultValue
-		}
-	} else if item.TypeID == "datetime" {
-		fieldStr += " TIMESTAMP"
-		if !item.Nullable {
-			fieldStr += " not null"
-		}
-		if item.DefaultValue != "" {
-			fieldStr += " DEFAULT " + item.DefaultValue
-		}
-	} else if item.TypeID == "decimal" {
-		fieldStr += " DECIMAL(24,9) not null"
+	} else if item.TypeID == md.FIELD_TYPE_BOOL {
+		fieldStr += " TINYINT NOT NULL"
 		if item.DefaultValue != "" {
 			fieldStr += " DEFAULT " + item.DefaultValue
 		} else {
 			fieldStr += " DEFAULT 0"
 		}
-	} else if item.TypeID == "int" {
+	} else if item.TypeID == md.FIELD_TYPE_DATE || item.TypeID == md.FIELD_TYPE_DATETIME {
+		fieldStr += " TIMESTAMP"
+		if !item.Nullable {
+			fieldStr += " NOT NULL"
+		}
+		if item.DefaultValue != "" {
+			fieldStr += " DEFAULT " + item.DefaultValue
+		}
+	} else if item.TypeID == md.FIELD_TYPE_DECIMAL {
+		fieldStr += " DECIMAL(24,9) NOT NULL"
+		if item.DefaultValue != "" {
+			fieldStr += " DEFAULT " + item.DefaultValue
+		} else {
+			fieldStr += " DEFAULT 0"
+		}
+	} else if item.TypeID == md.FIELD_TYPE_INT {
 		if item.Length == 0 {
-			fieldStr += " int not null"
+			fieldStr += " INT NOT NULL"
 		} else if item.Length < 2 {
-			fieldStr += " tinyint not null"
+			fieldStr += " TINYINT NOT NULL"
 		} else if item.Length > 4 {
-			fieldStr += " smallint not null"
+			fieldStr += " SMALLINT NOT NULL"
 		} else if item.Length < 8 {
-			fieldStr += " int not null"
+			fieldStr += " INT NOT NULL"
 		} else if item.Length >= 8 {
-			fieldStr += " bigint not null"
+			fieldStr += " BIGINT NOT NULL"
 		} else {
-			fieldStr += " int not null"
+			fieldStr += " INT NOT NULL"
 		}
 		if item.DefaultValue != "" {
 			fieldStr += " DEFAULT " + item.DefaultValue
@@ -171,7 +185,7 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 	} else if item.TypeType == md.TYPE_ENTITY || item.TypeType == md.TYPE_ENUM {
 		fieldStr += " nvarchar(36)"
 		if !item.Nullable {
-			fieldStr += " not null"
+			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
 			fieldStr += " DEFAULT " + item.DefaultValue
@@ -182,24 +196,27 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 		}
 		fieldStr += fmt.Sprintf(" nvarchar(%d)", item.Length)
 		if !item.Nullable {
-			fieldStr += " not null"
+			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
 			fieldStr += " DEFAULT " + item.DefaultValue
 		}
 	}
+	fieldStr += fmt.Sprintf(" COMMENT '%s'", item.Name)
 	return fieldStr
 
 }
 func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 	entityIds := make([]string, 0)
+	oldEntities := make([]md.MDEntity, 0)
 	for i, _ := range items {
 		entity := items[i]
 		if entity.ID == "" {
 			continue
 		}
 		oldEntity := md.MDEntity{}
-		if s.repo.Model(oldEntity).Order("id").Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+		if s.repo.Model(oldEntity).Preload("Fields").Order("id").Where("id=?", entity.ID).Take(&oldEntity); oldEntity.ID != "" {
+			oldEntities = append(oldEntities, oldEntity)
 			datas := make(map[string]interface{})
 			if oldEntity.TableName != entity.TableName {
 				datas["TableName"] = entity.TableName
@@ -234,10 +251,16 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 			}
 			s.repo.Create(&entity)
 		}
-
-		if len(entity.Fields) > 0 {
+		entityIds = append(entityIds, entity.ID)
+	}
+	//属性字段
+	for i, _ := range items {
+		entity := items[i]
+		if entity.ID != "" && entity.Type == md.TYPE_ENTITY && len(entity.Fields) > 0 {
+			itemCodes := make([]string, 0)
 			for f, _ := range entity.Fields {
 				field := entity.Fields[f]
+				itemCodes = append(itemCodes, field.Code)
 				field.IsNormal = true
 				if field.DbName == "-" {
 					field.IsNormal = false
@@ -248,14 +271,30 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 				oldField := md.MDField{}
 				if fieldType := s.getEntity(field.TypeID); fieldType.ID != "" {
 					field.TypeType = fieldType.Type
+					field.TypeID = fieldType.ID
 				}
-				if field.TypeType == md.TYPE_ENTITY {
+				if field.TypeType == md.TYPE_ENTITY { //实体
+					if field.Kind == "" {
+						field.Kind = "belongs_to"
+					}
 					if field.ForeignKey == "" {
-						field.ForeignKey = field.Code
+						field.ForeignKey = fmt.Sprintf("%sID", field.Code)
 					}
 					if field.AssociationKey == "" {
-						field.ForeignKey = "ID"
+						field.AssociationKey = "ID"
 					}
+					field.IsNormal = false
+				} else if field.TypeType == md.TYPE_ENUM { //枚举
+					if field.Kind == "" {
+						field.Kind = "belongs_to"
+					}
+					if field.ForeignKey == "" {
+						field.ForeignKey = fmt.Sprintf("%sID", field.Code)
+					}
+					if field.AssociationKey == "" {
+						field.AssociationKey = "ID"
+					}
+					field.IsNormal = false
 				}
 				if s.repo.Model(oldField).Order("id").Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
 					datas := make(map[string]interface{})
@@ -320,14 +359,42 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 					s.repo.Create(&field)
 				}
 			}
+			s.repo.Delete(md.MDEntity{}, "entity_id=? and code not in (?)", entity.ID, itemCodes)
 		}
-		entityIds = append(entityIds, entity.ID)
+	}
+	//枚举
+	for _, entity := range items {
+		if entity.ID != "" && entity.Type == md.TYPE_ENUM && len(entity.Fields) > 0 {
+			itemCodes := make([]string, 0)
+			for f, field := range entity.Fields {
+				newEnum := md.MDEnum{ID: field.Code, EntityID: entity.ID, Sequence: f, Name: field.Name}
+				oldEnum := md.MDEnum{}
+				itemCodes = append(itemCodes, newEnum.ID)
+				if s.repo.Model(oldEnum).Order("id").Where("entity_id=? and id=?", newEnum.EntityID, newEnum.ID).Take(&oldEnum); oldEnum.ID != "" {
+					datas := make(map[string]interface{})
+					if oldEnum.Name != field.Name {
+						datas["Name"] = field.Name
+					}
+					if oldEnum.Sequence != newEnum.Sequence {
+						datas["Sequence"] = newEnum.Sequence
+					}
+					if len(datas) > 0 {
+						s.repo.Model(oldEnum).Where("entity_id=? and id=?", oldEnum.EntityID, oldEnum.ID).Updates(datas)
+					}
+				} else {
+					s.repo.Create(&newEnum)
+				}
+			}
+			s.repo.Delete(md.MDEntity{}, "entity_id=? and code not in (?)", entity.ID, itemCodes)
+		}
 	}
 	if len(entityIds) > 0 {
 		toTables := make([]md.MDEntity, 0)
 		s.repo.Model(md.MDEntity{}).Preload("Fields").Where("id in (?) and type=?", entityIds, md.TYPE_ENTITY).Find(&toTables)
-		return s.EntityToTables(toTables...)
+		return s.entityToTables(toTables, oldEntities)
 	}
+	//缓存
+	md.CacheMD(s.repo)
 	return nil
 }
 func (s *MOFSv) AddActionCommand(items []md.MDActionCommand) error {
@@ -422,10 +489,14 @@ func (s *MOFSv) AddPage(items []md.MDPage) error {
 				datas["Templated"] = entity.Templated
 			}
 			if len(datas) > 0 {
-				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
+				if err := s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas).Error; err != nil {
+					glog.Error(err)
+				}
 			}
 		} else {
-			s.repo.Create(&entity)
+			if err := s.repo.Create(&entity).Error; err != nil {
+				glog.Error(err)
+			}
 		}
 	}
 	return nil

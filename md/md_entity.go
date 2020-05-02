@@ -1,6 +1,7 @@
 package md
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ggoop/goutils/di"
@@ -18,7 +19,7 @@ type MDEntity struct {
 	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`
 	Type      string `gorm:"size:50"` // simple，entity，enum，interface，dto,view
 	Domain    string `gorm:"size:50;name:领域" json:"domain"`
-	Code      string `gorm:"size:100"`
+	Code      string `gorm:"size:100;index:code_idx"`
 	Name      string `gorm:"size:100"`
 	TableName string `gorm:"size:50"`
 	Memo      string `gorm:"size:500"`
@@ -28,6 +29,9 @@ type MDEntity struct {
 	cache     map[string]MDField
 }
 
+func (s MDEntity) String() string {
+	return fmt.Sprintf("%s-%s-%s", s.Domain, s.Code, s.ID)
+}
 func (s *MDEntity) MD() *Mder {
 	return &Mder{ID: "md.entity", Domain: md_domain, Name: "实体"}
 }
@@ -82,7 +86,7 @@ type MDField struct {
 	Type           *MDEntity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
 	Limit          string    `gorm:"size:500;name:限制"`
 	Memo           string    `gorm:"size:500"`
-	Tags           string    `gorm:"size:500"`
+	Tags           string    `gorm:"size:500"` // code,name,ent,import
 	Sequence       int
 	Nullable       bool
 	Length         int
@@ -92,6 +96,9 @@ type MDField struct {
 	MaxValue       string
 }
 
+func (s MDField) String() string {
+	return fmt.Sprintf("%s-%s-%s", s.Code, s.Name, s.TypeType)
+}
 func (s *MDField) MD() *Mder {
 	return &Mder{ID: "md.field", Domain: md_domain, Name: "属性"}
 }
@@ -131,10 +138,10 @@ type MDFilter struct {
 	ID         string `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt  Time   `gorm:"name:创建时间" json:"created_at"`
 	UpdatedAt  *Time  `gorm:"name:更新时间" json:"updated_at"`
-	OwnerID    string `gorm:"size:50;name:拥有者ID" json:"owner_id"`   //查询
-	OwnerType  string `gorm:"size:50;name:拥有者类型" json:"owner_type"` //查询
-	OwnerField string `gorm:"size:50;name:所属字段" json:"owner_field"` //字段名称
-	Field      string `gorm:"size:50;name:字段" json:"field"`         //如果#开始，则表示标记，需要使用表达式
+	OwnerID    string `gorm:"size:50;index:ownerIdx;name:拥有者ID" json:"owner_id"`   //查询
+	OwnerType  string `gorm:"size:50;index:ownerIdx;name:拥有者类型" json:"owner_type"` //查询
+	OwnerField string `gorm:"size:50;index:ownerIdx;name:所属字段" json:"owner_field"` //字段名称
+	Field      string `gorm:"size:50;name:字段" json:"field"`                        //如果#开始，则表示标记，需要使用表达式
 	Expr       string `gorm:"size:200;name:表达式" json:"expr"`
 	Title      string `gorm:"name:显示名称" json:"title"`
 	DataType   string `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime

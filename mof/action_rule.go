@@ -112,7 +112,6 @@ func RegisterActionRule(rules ...IActionRule) {
 			_action_rule[key] = rule
 		}
 	}
-
 }
 
 // 注册器
