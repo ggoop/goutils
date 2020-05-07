@@ -48,6 +48,12 @@ func Open() *MysqlRepo {
 func (s *MysqlRepo) Close() error {
 	return s.DB.Close()
 }
+func (s *MysqlRepo) Begin() *MysqlRepo {
+	return &MysqlRepo{s.DB.Begin()}
+}
+func (s *MysqlRepo) New() *MysqlRepo {
+	return &MysqlRepo{s.DB.New()}
+}
 func NewMysqlRepo() *MysqlRepo {
 	// 生成数据库
 	CreateDB(configs.Default.Db.Database)
