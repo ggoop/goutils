@@ -132,7 +132,7 @@ func getConfigViper(name string) *viper.Viper {
 
 	envFile := JoinCurrentPath(path.Join(envPath, name+"."+envType))
 	if !PathExists(envFile) {
-		paths := []string{path.Join(envPath, name, "prod."+envType), path.Join(envPath, name, "dev."+envType)}
+		paths := []string{path.Join(envPath, name+".prod."+envType), path.Join(envPath, name+".dev."+envType)}
 		for _, p := range paths {
 			//不存在时，自动由dev创建
 			if !PathExists(envFile) {
