@@ -20,5 +20,4 @@ go.sum
 .idea
 .vscode
 *.suo
-
 node_modules
