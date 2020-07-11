@@ -25,7 +25,7 @@ type MDEnumType struct {
 枚举值
 */
 type MDEnum struct {
-	EntityID  string `gorm:"size:50;primary_key:uix" json:"entity_id"`
+	EntityID  string `gorm:"size:50;primary_key:uix;morph:limit" json:"entity_id"`
 	ID        string `gorm:"size:50;primary_key:uix" json:"id"`
 	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
 	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`

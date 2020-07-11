@@ -6,6 +6,8 @@ import (
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
+	"github.com/ggoop/goutils/query"
+	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -14,7 +16,7 @@ import (
 */
 type ReqContext struct {
 	PageID     string                 `json:"page_id" form:"page_id"` //页面ID
-	Params     map[string]interface{} `json:"params"  form:"params"`
+	Params     map[string]interface{} `json:"params"  form:"params"`  //一般指 页面 URI 参数
 	ID         string                 `json:"id" form:"id"`
 	IDS        []string               `json:"ids" form:"ids"`
 	UserID     string                 `json:"user_id" form:"user_id"` //用户ID
@@ -26,11 +28,14 @@ type ReqContext struct {
 	Rule       string                 `json:"rule" form:"rule"`       //规则编码
 	URI        string                 `json:"uri" form:"uri"`
 	Method     string                 `json:"method" form:"method"`
-	Q          string                 `json:"q" form:"q"`
-	Condition  interface{}            `json:"condition" form:"condition"`
+	Q          string                 `json:"q" form:"q"`                 //模糊查询条件
+	Condition  interface{}            `json:"condition" form:"condition"` //附件条件
 	MainEntity string                 `json:"main_entity" form:"main_entity"`
 	Data       interface{}            `json:"data" form:"data"` //数据
 	Tag        string                 `json:"tag" form:"tag"`
+	Orders     []query.QueryOrder     `json:"orders" form:"orders"`
+	Wheres     []query.QueryWhere     `json:"wheres" form:"wheres"`
+	Columns    []query.QueryColumn    `json:"columns" form:"columns"`
 }
 type ResContext struct {
 	Data  utils.Map
@@ -45,6 +50,10 @@ func (s *ResContext) SetData(name string, value interface{}) *ResContext {
 	return s
 }
 
+func (s ResContext) New() ResContext {
+	return ResContext{}
+}
+
 type PageViewDTO struct {
 	Data       interface{} `json:"data"`
 	Code       string      `json:"code"`
@@ -56,6 +65,11 @@ type PageViewDTO struct {
 	IsMain     md.SBool    `json:"is_main"`
 }
 
+func (s ReqContext) New() ReqContext {
+	return ReqContext{
+		UserID: s.UserID, EntID: s.EntID, OrgID: s.OrgID,
+	}
+}
 func (s ReqContext) Copy() ReqContext {
 	return ReqContext{
 		ID: s.ID, IDS: s.IDS, UserID: s.UserID, EntID: s.EntID, OrgID: s.OrgID,
@@ -104,6 +118,77 @@ func GetActionRule(domain, rule string) (IActionRule, bool) {
 		return r, ok
 	}
 	return nil, false
+}
+
+//执行命令
+func DoAction(req ReqContext) (interface{}, error) {
+	if req.MainEntity == "" && req.PageID != "" {
+		pageMD := md.MDPage{}
+		if err := repositories.Default().Model(pageMD).Where("id=?", req.PageID).Take(&pageMD).Error; err != nil {
+			return nil, err
+		}
+		req.MainEntity = pageMD.MainEntity
+	}
+	res := &ResContext{}
+	rules := make([]IActionRule, 0)
+	comName := "common"
+	//优先指定规则
+	if req.Rule != "" {
+		ruleCodes := strings.Split(req.Rule, ";")
+		for _, r := range ruleCodes {
+			rule, ok := GetActionRule(req.PageID, r)
+			//没有找到，则查找公共规则
+			if !ok && req.PageID != comName {
+				rule, ok = GetActionRule(comName, r)
+			}
+			if rule != nil && ok {
+				rules = append(rules, rule)
+			}
+		}
+	} else {
+		command := md.MDActionCommand{}
+		//查询页面命令
+		repositories.Default().Where("page_id=? and code=? and type=?", req.PageID, req.Command, "action").Take(&command)
+		if command.ID == "" { //查找实体命令
+			repositories.Default().Where("page_id=? and code=? and type=?", req.MainEntity, req.Command, "entity").Take(&command)
+		}
+		if command.ID == "" { //查找公共命令
+			repositories.Default().Where("page_id=? and code=? and type=?", comName, req.Command, "action").Take(&command)
+		}
+		if command.ID != "" && command.Rules != "" {
+			ruleCodes := strings.Split(command.Rules, ";")
+			for _, r := range ruleCodes {
+				rule, ok := GetActionRule(command.PageID, r)
+				//没有找到，则查找公共规则
+				if !ok && command.PageID != comName {
+					rule, ok = GetActionRule(comName, r)
+				}
+				if rule != nil && ok {
+					rules = append(rules, rule)
+				}
+			}
+		}
+	}
+	//如果没有找到任何规则，则使用和命令同名规则
+	if len(rules) == 0 {
+		//页面级
+		rule, ok := GetActionRule(req.PageID, req.Command)
+		if !ok && req.PageID != req.MainEntity { //实体级
+			rule, ok = GetActionRule(req.MainEntity, req.Command)
+		}
+		if !ok && req.PageID != comName { //公共级
+			rule, ok = GetActionRule(comName, req.Command)
+		}
+		if rule != nil && ok {
+			rules = append(rules, rule)
+		}
+	}
+	for _, rule := range rules {
+		if err := rule.Exec(&req, res); err != nil {
+			return nil, err
+		}
+	}
+	return res.Data, res.Error
 }
 func RegisterActionRule(rules ...IActionRule) {
 	if len(rules) > 0 {

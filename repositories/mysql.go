@@ -34,6 +34,10 @@ func Default() *MysqlRepo {
 	}
 	return _default
 }
+
+func SetDefault(d *MysqlRepo) {
+	_default = d
+}
 func Open() *MysqlRepo {
 	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(true))
 	if err != nil {

@@ -9,9 +9,9 @@ import (
 
 	"github.com/ggoop/goutils/context"
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/gorm"
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/repositories"
-	"github.com/ggoop/goutils/gorm"
 	"github.com/ggoop/goutils/utils"
 
 	"github.com/shopspring/decimal"
@@ -310,7 +310,7 @@ func (m *exector) buildSelects(queryDB *gorm.DB) *gorm.DB {
 	queryDB = queryDB.Select(selects)
 	return queryDB
 }
-func (m *exector) getWhereArgs(where IQWhere) ([]interface{}) {
+func (m *exector) getWhereArgs(where IQWhere) []interface{} {
 	if where == nil || len(where.GetArgs()) <= 0 {
 		return nil
 	}
@@ -324,6 +324,8 @@ func (m *exector) getWhereArgs(where IQWhere) ([]interface{}) {
 				if v["_isEnumObject"] != nil && v["id"] != nil {
 					args[i] = v["id"]
 				}
+			} else if v, ok := item.(md.SJson); ok {
+				args[i] = v.GetValue()
 			}
 		} else if where.GetDataType() == WHERE_TYPE_DATE {
 			args[i] = md.CreateTime(item).Format(md.Layout_YYYYMMDD)

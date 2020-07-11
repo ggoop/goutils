@@ -248,9 +248,31 @@ func (scope *Scope) handleBelongsToPreload(field *Field, conditions []interface{
 		return
 	}
 
+	fieldType := field.Struct.Type
+	if fieldType.Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem()
+	}
+	newScope := scope.New(reflect.New(fieldType).Interface())
+	preFields := newScope.Fields()
+
+	var morphField *Field
+	for i, v := range preFields {
+		if val, ok := v.TagSettingsGet("MORPH"); ok && strings.ToLower(val) == "limit" {
+			morphField = preFields[i]
+			break
+		}
+	}
+	query := fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.AssociationForeignDBNames), toQueryMarks(primaryKeys))
+	values := toQueryValues(primaryKeys)
+
+	if val, ok := field.TagSettingsGet("LIMIT"); ok && morphField != nil {
+		query += fmt.Sprintf(" AND %v = ?", scope.Quote(morphField.DBName))
+		values = append(values, val)
+	}
+
 	// find relations
 	results := makeSlice(field.Struct.Type)
-	scope.Err(preloadDB.Where(fmt.Sprintf("%v IN (%v)", toQueryCondition(scope, relation.AssociationForeignDBNames), toQueryMarks(primaryKeys)), toQueryValues(primaryKeys)...).Find(results, preloadConditions...).Error)
+	scope.Err(preloadDB.Where(query, values...).Find(results, preloadConditions...).Error)
 
 	// assign find results
 	var (
