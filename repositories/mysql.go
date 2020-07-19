@@ -13,15 +13,6 @@ import (
 	"github.com/ggoop/goutils/gorm"
 )
 
-const (
-	//mssql
-	Driver_MSSQL = "mssql"
-	//mysql
-	Driver_MYSQL = "mysql"
-	//oci8
-	Driver_OCI8 = "oci8"
-)
-
 type MysqlRepo struct {
 	*gorm.DB
 }
@@ -82,7 +73,7 @@ func getDsnString(inDb bool) string {
 	//mysql => user:password@(localhost)/dbname?charset=utf8&parseTime=True&loc=Local
 	str := ""
 	// 创建连接
-	if configs.Default.Db.Driver == Driver_MSSQL {
+	if configs.Default.Db.Driver == gorm.DRIVER_MSSQL {
 		var buf bytes.Buffer
 		buf.WriteString("sqlserver://")
 		buf.WriteString(configs.Default.Db.Username)
@@ -109,7 +100,7 @@ func getDsnString(inDb bool) string {
 		str = buf.String()
 		return str
 	}
-	if configs.Default.Db.Driver == Driver_OCI8 {
+	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
 		//[username/[password]@]host[:port][/service_name][?param1=value1&...&paramN=valueN]
 		var buf bytes.Buffer
 		buf.WriteString(configs.Default.Db.Username)
@@ -127,7 +118,7 @@ func getDsnString(inDb bool) string {
 				buf.WriteString(":1521")
 			}
 		}
-		if configs.Default.Db.Database != "" && inDb {
+		if configs.Default.Db.Database != "" {
 			buf.WriteString("/")
 			buf.WriteString(configs.Default.Db.Database)
 		}
@@ -165,12 +156,15 @@ func DestroyDB(name string) error {
 	return db.Exec(fmt.Sprintf("Drop Database if exists %s;", name)).Error
 }
 func CreateDB(name string) {
+	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+		return
+	}
 	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(false))
 	if err != nil {
 		glog.Errorf("orm failed to initialized: %v", err)
 	}
 	script := ""
-	if configs.Default.Db.Driver == Driver_MSSQL {
+	if configs.Default.Db.Driver == gorm.DRIVER_MSSQL {
 		script = fmt.Sprintf("if not exists (select * from sysdatabases where name='%s') begin create database %s end;", name, name)
 	} else {
 		script = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s COLLATE %s;", name, configs.Default.Db.Charset, configs.Default.Db.Collation)

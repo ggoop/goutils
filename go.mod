@@ -16,6 +16,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gavv/monotime v0.0.0-20190418164738-30dba4353424 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/godror/godror v0.17.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
@@ -86,12 +87,9 @@ require (
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.42.0
 	github.com/ggoop/goutils => /Users/samw/project/ggoop/goutils
-	github.com/ggoop/suite-reg => /Users/samw/project/suite/suite-reg
 	go.uber.org/atomic => github.com/uber-go/atomic v1.4.0
 	go.uber.org/multierr => github.com/uber-go/multierr v1.1.0
-
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20190701094942-4def268fd1a4
-
 	golang.org/x/exp => github.com/golang/exp v0.0.0-20190627132806-fd42eb6b336f
 	golang.org/x/image => github.com/golang/image v0.0.0-20190703141733-d6a02ce849c9
 

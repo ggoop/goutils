@@ -10,6 +10,7 @@ import (
 	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/query"
 	"github.com/ggoop/goutils/repositories"
+	"github.com/ggoop/goutils/utils"
 )
 
 type testTag struct {
@@ -28,9 +29,11 @@ func (s *testTag) MD() *md.Mder {
 func TestEnumPreload(t *testing.T) {
 	repo := repositories.Default()
 
-	item := testTag{}
-	//md.Migrate(repo, &item)
-	repo.Model(item).Preload("Type").Take(&item)
+	md.Migrate(repo)
+	count := 0
+	glog.Error(repo.Table("DEPT").Select("DNAME").Where("DNAME=?", "SALES").Count(&count).Error)
+
+	glog.Info(utils.GUID())
 
 }
 func TestSplitMatched(t *testing.T) {

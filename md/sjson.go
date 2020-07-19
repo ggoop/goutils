@@ -122,6 +122,9 @@ func (t *SJson) Scan(v interface{}) error {
 	return nil
 }
 func (t SJson) GormDataType(d gorm.Dialect) string {
+	if d.GetName() == gorm.DRIVER_GODROR {
+		return "VARCHAR2(4000)"
+	}
 	return "text"
 }
 func (t SJson) GetObject(obj interface{}) error {

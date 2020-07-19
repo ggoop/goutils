@@ -321,7 +321,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 		mds := []interface{}{
 			&MDEntity{}, &MDField{}, &MDEnum{}, &MDFilter{},
 			&MDActionCommand{}, &MDActionRule{},
-			&MDPage{}, &MDPageView{},
+			&MDPage{},
 		}
 		needDb := make([]interface{}, 0)
 		for _, v := range mds {
@@ -348,9 +348,9 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 			}
 			m.Migrate()
 		}
-		//表迁移
-		glog.Error("AutoMigrate BIZ")
-		db.AutoMigrate(needDb...)
+		if err := db.AutoMigrate(needDb...).Error; err != nil {
+			glog.Error(err)
+		}
 	}
 
 }

@@ -68,7 +68,6 @@ func (t *SBool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 func (t SBool) Not() SBool {
 	if t.IsTrue() {
 		return SBool_False
@@ -85,6 +84,7 @@ func (t SBool) Equal(v SBool) bool {
 func (t SBool) NotEqual(v SBool) bool {
 	return t.value != v.value
 }
+
 // Value implements the driver Valuer interface.
 func (t SBool) Value() (driver.Value, error) {
 	if !t.valid {
@@ -92,6 +92,7 @@ func (t SBool) Value() (driver.Value, error) {
 	}
 	return t.value, nil
 }
+
 // Scan implements the Scanner interface.
 func (t *SBool) Scan(v interface{}) error {
 	if v == nil {
@@ -116,5 +117,8 @@ func (t SBool) _ToBoolValue(value interface{}) string {
 	return bValue
 }
 func (t SBool) GormDataType(d gorm.Dialect) string {
+	if d.GetName() == gorm.DRIVER_GODROR {
+		return "varchar2(2)"
+	}
 	return "varchar(2)"
 }

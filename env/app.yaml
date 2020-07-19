@@ -7,14 +7,12 @@ app:
   debug: true
 db:
   # mysql,mssql
-  driver: mysql
+  driver: godror
   # localhost
   host: localhost
-  # 3306,1433
-  port: 3306
-  database: goutils
-  username: root
-  password: root
+  database: orcl
+  username: scott
+  password: 123456
 log:
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info

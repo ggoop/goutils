@@ -12,3 +12,12 @@ type Model struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
 }
+
+const (
+	//mssql
+	DRIVER_MSSQL = "mssql"
+	//mysql
+	DRIVER_MYSQL = "mysql"
+	//oracle :godror
+	DRIVER_GODROR = "godror"
+)

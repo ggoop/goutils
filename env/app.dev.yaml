@@ -6,13 +6,15 @@ app:
     port: 3003    
     debug: true
 db:
-    # mysql,mssql
+    # mysql,mssql,godror
     driver: mysql
     # localhost
     host: localhost
-    # 3306,1433
+    # 3306,1433,1521
     port: 3306
+    # test,test,orcl
     database: goutils
+    # root ,sa ,scott
     username: root
     password: root
 log: 
