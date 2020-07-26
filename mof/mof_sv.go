@@ -98,7 +98,7 @@ func (s *MOFSv) updateTable(item md.MDEntity, old md.MDEntity) {
 		if s.repo.Dialect().HasColumn(item.TableName, field.DbName) { //字段已存在
 			oldString := s.buildColumnNameString(oldField)
 			//修改字段类型、类型长度、默认值、注释
-			if oldString != newString {
+			if oldString != newString && strings.Contains(item.Tags, "update") {
 				if err := s.repo.Exec(fmt.Sprintf("ALTER TABLE %v MODIFY %v;", s.quote(item.TableName), newString)).Error; err != nil {
 					glog.Error(err)
 				}
