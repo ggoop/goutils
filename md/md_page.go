@@ -7,11 +7,12 @@ type MDPage struct {
 	Type       string `gorm:"size:50;name:类型" json:"type"` //page，ref，app
 	Domain     string `gorm:"size:50;name:领域" json:"domain"`
 	EntID      string `gorm:"size:50;name:企业" json:"ent_id"`
-	Code       string `gorm:"size:50" json:"code"`
+	Code       string `gorm:"size:50;unique_index:uix_code" json:"code"`
 	Name       string `gorm:"size:50" json:"name"`
 	Widgets    SJson  `gorm:"type:text" json:"widgets"` //JSON
+	Extras     SJson  `gorm:"type:text" json:"extras"`  //JSON
 	MainEntity string `gorm:"size:50;name:主实体" json:"main_entity"`
-	Templated  SBool  `json:"templated"`
+	Layout     string `gorm:"size:50" json:"layout"`
 	System     SBool  `json:"system"`
 }
 

@@ -104,7 +104,7 @@ func (s *QueryCase) GetExector() IExector {
 		q := "%" + s.Q + "%"
 		qwhere := exector.Where("")
 		for _, v := range s.Columns {
-			if v.CodeField.IsTrue() || v.NameField.IsTrue() {
+			if v.CodeField.IsTrue() || v.NameField.IsTrue() || strings.Contains(v.Tags, "quick_filter") {
 				if v.Expr != "" {
 					qwhere.OrWhere(v.Expr+" like ?", q)
 				} else if v.Field != "" {
@@ -166,7 +166,7 @@ func (s *QueryCase) addSubItemToIWhere(iw IQWhere, subValue QueryWhere) {
 	newIw := s.queryWhereToIWhere(subValue)
 	if newIw != nil && iw.GetLogical() == "or" {
 		newIw = iw.OrWhere(newIw.GetQuery(), newIw.GetArgs()).SetDataType(newIw.GetDataType())
-	} else if (newIw != nil) {
+	} else if newIw != nil {
 		newIw = iw.Where(newIw.GetQuery(), newIw.GetArgs()).SetDataType(newIw.GetDataType())
 	}
 	if newIw != nil && subValue.Children != nil && len(subValue.Children) > 0 {
