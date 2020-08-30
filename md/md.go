@@ -321,7 +321,7 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 		mds := []interface{}{
 			&MDEntity{}, &MDField{}, &MDEnum{}, &MDFilter{},
 			&MDActionCommand{}, &MDActionRule{},
-			&MDPage{},
+			&MDPage{}, &MDPageWidget{},
 		}
 		needDb := make([]interface{}, 0)
 		for _, v := range mds {

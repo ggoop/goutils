@@ -467,35 +467,125 @@ func (s *MOFSv) AddPage(items []md.MDPage) error {
 		oldEntity := md.MDPage{}
 		if s.repo.Model(oldEntity).Where("id=?", entity.ID).Order("id").Take(&oldEntity); oldEntity.ID != "" {
 			datas := make(map[string]interface{})
-			if oldEntity.Type != entity.Type {
+			if oldEntity.Type != entity.Type && entity.Type != "" {
 				datas["Type"] = entity.Type
 			}
 			if oldEntity.Widgets.NotEqual(entity.Widgets) && entity.Widgets.Valid() {
 				datas["Widgets"] = entity.Widgets
 			}
-			if oldEntity.Name != entity.Name {
+			if oldEntity.Extras.NotEqual(entity.Extras) && entity.Extras.Valid() {
+				datas["Extras"] = entity.Extras
+			}
+			if oldEntity.Code != entity.Code && entity.Code != "" {
+				datas["Code"] = entity.Code
+			}
+			if oldEntity.Name != entity.Name && entity.Name != "" {
 				datas["Name"] = entity.Name
 			}
-			if oldEntity.Domain != entity.Domain {
+			if oldEntity.Domain != entity.Domain && entity.Domain != "" {
 				datas["Domain"] = entity.Domain
 			}
 			if oldEntity.MainEntity != entity.MainEntity && entity.MainEntity != "" {
 				datas["MainEntity"] = entity.MainEntity
 			}
+			if oldEntity.Element != entity.Element && entity.Element != "" {
+				datas["Element"] = entity.Element
+			}
 			if oldEntity.System.NotEqual(entity.System) && entity.System.Valid() {
 				datas["System"] = entity.System
 			}
-			if oldEntity.Templated.NotEqual(entity.Templated) && entity.Templated.Valid() {
-				datas["Templated"] = entity.Templated
-			}
 			if len(datas) > 0 {
 				if err := s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas).Error; err != nil {
-					glog.Error(err)
+					return glog.Error(err)
 				}
 			}
 		} else {
 			if err := s.repo.Create(&entity).Error; err != nil {
-				glog.Error(err)
+				return glog.Error(err)
+			}
+		}
+		if err := s.savePageWidgets(entity, entity.Children); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *MOFSv) savePageWidgets(page md.MDPage, widgets []md.MDPageWidget) error {
+	for i, _ := range widgets {
+		item := widgets[i]
+		item.PageID = page.ID
+		item.EntID = page.EntID
+		item.Sequence = i + 1
+
+		old := md.MDPageWidget{}
+		s.repo.Model(old).Where("page_id=? and code=?", item.PageID, item.Code).Order("id").Take(&old)
+		if old.ID != "" {
+			item.ID = old.ID
+			datas := make(map[string]interface{})
+			if old.ParentCode != item.ParentCode {
+				datas["ParentCode"] = item.ParentCode
+			}
+			if old.Element != item.Element && item.Element != "" {
+				datas["Element"] = item.Element
+			}
+			if old.Code != item.Code && item.Code != "" {
+				datas["Code"] = item.Code
+			}
+			if old.Name != item.Name && item.Name != "" {
+				datas["Name"] = item.Name
+			}
+			if old.Entity != item.Entity && item.Entity != "" {
+				datas["Entity"] = item.Entity
+			}
+			if old.Field != item.Field && item.Field != "" {
+				datas["Field"] = item.Field
+			}
+			if old.Extras.NotEqual(item.Extras) && item.Extras.Valid() {
+				datas["Extras"] = item.Extras
+			}
+			if old.Required.NotEqual(item.Required) && item.Required.Valid() {
+				datas["Required"] = item.Required
+			}
+			if old.Hidden.NotEqual(item.Hidden) && item.Hidden.Valid() {
+				datas["Hidden"] = item.Hidden
+			}
+			if old.Editable.NotEqual(item.Editable) && item.Editable.Valid() {
+				datas["Editable"] = item.Editable
+			}
+			if old.Placeholder != item.Placeholder && item.Placeholder != "" {
+				datas["Placeholder"] = item.Placeholder
+			}
+			if old.Sequence != item.Sequence && item.Sequence > 0 {
+				datas["Sequence"] = item.Sequence
+			}
+			if old.Value.NotEqual(item.Value) && item.Value.Valid() {
+				datas["Value"] = item.Value
+			}
+			if old.Align != item.Align && item.Align != "" {
+				datas["Align"] = item.Align
+			}
+			if old.Width != item.Width && item.Width != "" {
+				datas["Width"] = item.Width
+			}
+			if old.InputType != item.InputType && item.InputType != "" {
+				datas["InputType"] = item.InputType
+			}
+			if old.DataSource != item.DataSource && item.DataSource != "" {
+				datas["DataSource"] = item.DataSource
+			}
+			if old.DataType != item.DataType && item.DataType != "" {
+				datas["DataType"] = item.DataType
+			}
+			if len(datas) > 0 {
+				if err := s.repo.Model(item).Where("id=?", item.ID).Updates(datas).Error; err != nil {
+					return glog.Error(err)
+				}
+			}
+		} else {
+			item.ID = utils.GUID()
+			if err := s.repo.Create(&item).Error; err != nil {
+				return glog.Error(err)
 			}
 		}
 	}
