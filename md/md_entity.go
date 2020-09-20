@@ -24,7 +24,7 @@ type MDEntity struct {
 	TableName string `gorm:"size:50"`
 	Memo      string `gorm:"size:500"`
 	Tags      string `gorm:"size:500"`
-	System    bool
+	System    SBool
 	Fields    []MDField `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:EntityID"`
 	cache     map[string]MDField
 }
@@ -76,8 +76,8 @@ type MDField struct {
 	Code           string    `gorm:"size:50;unique_index:uix"`
 	Name           string    `gorm:"size:50"`
 	DbName         string    `gorm:"size:50"`
-	IsNormal       bool
-	IsPrimaryKey   bool
+	IsNormal       SBool
+	IsPrimaryKey   SBool
 	ForeignKey     string    `gorm:"size:50"` //外键
 	AssociationKey string    `gorm:"size:50"` //Association
 	Kind           string    `gorm:"size:50"`
@@ -88,7 +88,7 @@ type MDField struct {
 	Memo           string    `gorm:"size:500"`
 	Tags           string    `gorm:"size:500"` // code,name,ent,import
 	Sequence       int
-	Nullable       bool
+	Nullable       SBool
 	Length         int
 	Precision      int
 	DefaultValue   string

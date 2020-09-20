@@ -219,7 +219,7 @@ func (m *md) Migrate() {
 	}
 	codes := make([]string, 0)
 	for _, field := range scope.GetModelStruct().StructFields {
-		newField := MDField{Code: field.Name, DbName: field.DBName, IsPrimaryKey: field.IsPrimaryKey, IsNormal: field.IsNormal, Name: field.TagSettings["NAME"], EntityID: entity.ID}
+		newField := MDField{Code: field.Name, DbName: field.DBName, IsPrimaryKey: SBool_Parse(field.IsPrimaryKey), IsNormal: SBool_Parse(field.IsNormal), Name: field.TagSettings["NAME"], EntityID: entity.ID}
 		if field.IsIgnored {
 			continue
 		}

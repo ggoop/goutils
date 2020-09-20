@@ -222,6 +222,9 @@ func (mssql) NormalizeIndexAndColumn(indexName, columnName string) (string, stri
 	return indexName, columnName
 }
 
+func (mssql) AdjustSql(sql *gorm.SqlStruct) *gorm.SqlStruct {
+	return sql
+}
 func currentDatabaseAndTable(dialect gorm.Dialect, tableName string) (string, string) {
 	if strings.Contains(tableName, ".") {
 		splitStrings := strings.SplitN(tableName, ".", 2)

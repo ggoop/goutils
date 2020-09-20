@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -338,16 +339,33 @@ func (scope *Scope) QuotedTableName() (name string) {
 
 	return scope.Quote(scope.TableName())
 }
-
-// CombinedConditionSql return combined condition sql
-func (scope *Scope) CombinedConditionSql() string {
-	joinSQL := scope.joinsSQL()
-	whereSQL := scope.whereSQL()
-	if scope.Search.raw {
-		whereSQL = strings.TrimSuffix(strings.TrimPrefix(whereSQL, "WHERE ("), ")")
+func (scope *Scope) CombinedSql() *SqlStruct {
+	sql := &SqlStruct{}
+	sql.SelectSql = scope.selectSQL()
+	sql.FromSql = scope.QuotedTableName()
+	sql.JoinSql = scope.joinsSQL()
+	sql.WhereSql = scope.whereSQL()
+	if pv, err := strconv.ParseInt(fmt.Sprint(scope.Search.limit), 0, 0); err == nil && pv >= 0 {
+		sql.LimitNum = pv
 	}
-	return joinSQL + whereSQL + scope.GroupSQL() +
-		scope.havingSQL() + scope.OrderSQL() + scope.limitAndOffsetSQL()
+	if pv, err := strconv.ParseInt(fmt.Sprint(scope.Search.offset), 0, 0); err == nil && pv >= 0 {
+		sql.OffsetNum = pv
+	}
+	if scope.Search.raw {
+		sql.WhereSql = strings.TrimSuffix(strings.TrimPrefix(sql.WhereSql, "WHERE ("), ")")
+	}
+	sql.GroupSql = scope.GroupSQL()
+	sql.HavingSql = scope.havingSQL()
+	sql.OrderSql = scope.OrderSQL()
+	sql.LimitSql = scope.limitAndOffsetSQL()
+
+	sql = scope.Dialect().AdjustSql(sql)
+
+	return sql
+}
+func (scope *Scope) CombinedConditionSql() string {
+	sql := scope.CombinedSql()
+	return sql.CombinedConditionSql()
 }
 
 // Raw set raw sql
@@ -460,8 +478,8 @@ func (scope *Scope) callMethod(methodName string, reflectValue reflect.Value) {
 }
 
 var (
-	columnRegexp        = regexp.MustCompile("^[a-zA-Z\\d]+(\\.[a-zA-Z\\d]+)*$") // only match string like `name`, `users.name`
-	isNumberRegexp      = regexp.MustCompile("^\\s*\\d+\\s*$")                   // match if string is number
+	columnRegexp        = regexp.MustCompile("^[a-z_A-Z\\d]+(\\.[a-z_A-Z\\d]+)*$") // only match string like `name`, `users.name`
+	isNumberRegexp      = regexp.MustCompile("^\\s*\\d+\\s*$")                     // match if string is number
 	comparisonRegexp    = regexp.MustCompile("(?i) (=|<>|(>|<)(=?)|LIKE|IS|IN) ")
 	countingQueryRegexp = regexp.MustCompile("(?i)^count(.+)$")
 )
@@ -493,7 +511,7 @@ func (scope *Scope) scan(rows *sql.Rows, columns []string, fields []*Field) {
 		}
 
 		for fieldIndex, field := range selectFields {
-			if field.DBName == column {
+			if strings.ToUpper(field.DBName) == strings.ToUpper(column) {
 				if field.Field.Kind() == reflect.Ptr {
 					values[index] = field.Field.Addr().Interface()
 				} else {
@@ -841,10 +859,11 @@ func (scope *Scope) joinsSQL() string {
 }
 
 func (scope *Scope) prepareQuerySQL() {
+	sql := scope.CombinedSql()
 	if scope.Search.raw {
-		scope.Raw(scope.CombinedConditionSql())
+		scope.Raw(sql.CombinedConditionSql())
 	} else {
-		scope.Raw(fmt.Sprintf("SELECT %v FROM %v %v", scope.selectSQL(), scope.QuotedTableName(), scope.CombinedConditionSql()))
+		scope.Raw(sql.CombinedSql())
 	}
 	return
 }

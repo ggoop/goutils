@@ -148,6 +148,10 @@ func createMysqlRepo(db *gorm.DB) *MysqlRepo {
 	return repo
 }
 func DestroyDB(name string) error {
+	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+		glog.Errorf("godror driver can not drop database")
+		return nil
+	}
 	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(false))
 	if err != nil {
 		glog.Errorf("orm failed to initialized: %v", err)
@@ -157,6 +161,7 @@ func DestroyDB(name string) error {
 }
 func CreateDB(name string) {
 	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+		glog.Errorf("godror driver can not create database")
 		return
 	}
 	db, err := gorm.Open(configs.Default.Db.Driver, getDsnString(false))

@@ -36,7 +36,7 @@ func (godror) BindVar(i int) string {
 }
 
 func (godror) Quote(key string) string {
-	return fmt.Sprintf(`"%s"`, key)
+	return fmt.Sprintf(`"%s"`, strings.ToUpper(key))
 }
 
 func (s *godror) DataTypeOf(field *gorm.StructField) string {
@@ -45,9 +45,9 @@ func (s *godror) DataTypeOf(field *gorm.StructField) string {
 	if sqlType == "" {
 		switch dataValue.Kind() {
 		case reflect.Bool:
-			sqlType = "NUMBER"
+			sqlType = "CHAR(1)"
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uintptr:
-			sqlType = "NUMBER"
+			sqlType = "INTEGER"
 		case reflect.Int64, reflect.Uint64:
 			sqlType = "NUMBER"
 		case reflect.Float32, reflect.Float64:
@@ -96,7 +96,7 @@ func (s godror) fieldCanAutoIncrement(field *gorm.StructField) bool {
 
 func (s godror) HasIndex(tableName string, indexName string) bool {
 	var count int
-	s.db.QueryRow("SELECT count(*) FROM user_indexes WHERE index_name=? AND table_name=?", strings.ToUpper(indexName), tableName).Scan(&count)
+	s.db.QueryRow("SELECT count(*) FROM user_indexes WHERE index_name = :1 AND table_name =:2", strings.ToUpper(indexName), strings.ToUpper(tableName)).Scan(&count)
 	return count > 0
 }
 
@@ -107,24 +107,24 @@ func (s godror) RemoveIndex(tableName string, indexName string) error {
 
 func (s godror) HasForeignKey(tableName string, foreignKeyName string) bool {
 	var count int
-	s.db.QueryRow("SELECT COUNT(*) FROM USER_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'R' AND TABLE_NAME = :1 AND CONSTRAINT_NAME = :2", tableName, foreignKeyName).Scan(&count)
+	s.db.QueryRow("SELECT COUNT(*) FROM USER_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'R' AND TABLE_NAME = :1 AND CONSTRAINT_NAME = :2", strings.ToUpper(tableName), strings.ToUpper(foreignKeyName)).Scan(&count)
 	return count > 0
 }
 
 func (s godror) HasTable(tableName string) bool {
 	var count int
-	s.db.QueryRow("SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = :1", tableName).Scan(&count)
+	s.db.QueryRow("SELECT COUNT(*) FROM USER_TABLES WHERE TABLE_NAME = :1", strings.ToUpper(tableName)).Scan(&count)
 	return count > 0
 }
 
 func (s godror) HasColumn(tableName string, columnName string) bool {
 	var count int
-	s.db.QueryRow("SELECT COUNT(*) FROM USER_TAB_COLUMNS WHERE TABLE_NAME = :1 AND COLUMN_NAME = :2", tableName, columnName).Scan(&count)
+	s.db.QueryRow("SELECT COUNT(*) FROM USER_TAB_COLUMNS WHERE TABLE_NAME = :1 AND COLUMN_NAME = :2", strings.ToUpper(tableName), strings.ToUpper(columnName)).Scan(&count)
 	return count > 0
 }
 
 func (s godror) ModifyColumn(tableName string, columnName string, typ string) error {
-	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v %v", tableName, columnName, typ))
+	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v %v", strings.ToUpper(tableName), strings.ToUpper(columnName), typ))
 	return err
 }
 
@@ -136,12 +136,24 @@ func (s godror) CurrentDatabase() (name string) {
 func (s godror) LimitAndOffsetSQL(limit, offset interface{}) (sql string, err error) {
 	if limit != nil {
 		if parsedLimit, err := strconv.ParseInt(fmt.Sprint(limit), 0, 0); err == nil && parsedLimit >= 0 {
-			sql += fmt.Sprintf("ROWNUM <= %d", limit)
+			sql += fmt.Sprintf(" ROWNUM <= %d", limit)
 		}
 	}
 	return
 }
 
+func (godror) AdjustSql(sql *gorm.SqlStruct) *gorm.SqlStruct {
+	if sql.LimitSql != "" {
+		if sql.WhereSql != "" {
+			sql.WhereSql = fmt.Sprintf("%v and %v", sql.WhereSql, sql.LimitSql)
+
+		} else {
+			sql.WhereSql = fmt.Sprintf("WHERE %v", sql.LimitSql)
+		}
+		sql.LimitSql = ""
+	}
+	return sql
+}
 func (godror) SelectFromDummyTable() string {
 	return "FROM dual"
 }

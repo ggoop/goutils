@@ -55,6 +55,7 @@ type Dialect interface {
 
 	// CurrentDatabase return current database name
 	CurrentDatabase() string
+	AdjustSql(sql *SqlStruct) *SqlStruct
 }
 
 var dialectsMap = map[string]Dialect{}

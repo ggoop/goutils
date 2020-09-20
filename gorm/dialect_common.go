@@ -162,6 +162,10 @@ func (commonDialect) SelectFromDummyTable() string {
 	return ""
 }
 
+func (commonDialect) AdjustSql(sql *SqlStruct) *SqlStruct {
+	return sql
+}
+
 func (commonDialect) LastInsertIDOutputInterstitial(tableName, columnName string, columns []string) string {
 	return ""
 }
