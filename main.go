@@ -11,7 +11,7 @@ func main() {
 	for i := 0; i < 10; i++ {
 		glog.Info(utils.GUID())
 	}
-	testOracle()
+	//testOracle()
 }
 func testOracle() {
 	repo := repositories.Default()
@@ -23,7 +23,7 @@ func testOracle() {
 	repo.Create(m)
 
 	mList := make([]testTable, 0)
-	repo.Find(mList, "is_system=?", 0)
+	repo.Find(&mList, "is_system=?", 0)
 
 	//take
 	m = &testTable{}

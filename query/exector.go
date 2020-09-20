@@ -425,7 +425,7 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 				if relationship.Field.Limit != "" {
 					condition = fmt.Sprintf(" and %v.entity_id=?", t.Alia)
 					args = append(args, relationship.Field.Limit)
-					queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v",
+					queryDB = queryDB.Joins(fmt.Sprintf("left join %v  %v on %v.%v=%v.%v%v",
 						t.Entity.TableName, t.Alia, t.Alia, "id", relationship.Entity.Alia, fkey.DbName, condition),
 						args...)
 					tag = true
@@ -433,14 +433,14 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 
 			}
 			if !tag {
-				queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v%v",
+				queryDB = queryDB.Joins(fmt.Sprintf("left join %v  %v on %v.%v=%v.%v%v",
 					t.Entity.TableName, t.Alia, t.Alia, lkey.DbName, relationship.Entity.Alia, fkey.DbName, condition),
 					args...)
 			}
 		} else if relationship.Field.Kind == "has_many" {
 			fkey := t.Entity.GetField(relationship.Field.ForeignKey)
 			lkey := relationship.Entity.Entity.GetField(relationship.Field.AssociationKey)
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v as %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DbName, relationship.Entity.Alia, lkey.DbName))
+			queryDB = queryDB.Joins(fmt.Sprintf("left join %v  %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DbName, relationship.Entity.Alia, lkey.DbName))
 		}
 	}
 	return queryDB
@@ -494,7 +494,7 @@ func (m *exector) parseFromField(value *oqlFrom) {
 		}
 		form := m.parseEntity(parts[0], parts[len(parts)-1])
 		form.IsMain = true
-		strs = append(strs, fmt.Sprintf("%s as %s", form.Entity.TableName, form.Alia))
+		strs = append(strs, fmt.Sprintf("%s  %s", form.Entity.TableName, form.Alia))
 	}
 	value.Expr = strings.Join(strs, ",")
 }
