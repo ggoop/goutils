@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/utils"
 )
 
 // Field model field definition
@@ -66,4 +67,19 @@ func (field *Field) Set(value interface{}) (err error) {
 
 	field.IsBlank = isBlank(field.Field)
 	return err
+}
+func (field *Field) SetDefaultValue(defaultValue interface{}) error {
+	fieldValue := field.Field
+	if fieldValue.Kind() == reflect.Ptr {
+		fieldValue = fieldValue.Elem()
+	}
+	switch fieldValue.Kind() {
+	case reflect.String:
+		defaultValue = utils.ToString(defaultValue)
+	case reflect.Int:
+		defaultValue = utils.ToInt(defaultValue)
+	}
+	field.Set(defaultValue)
+
+	return nil
 }

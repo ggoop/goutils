@@ -67,6 +67,11 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 				(field.Field.Kind() == reflect.Slice && field.Field.Type().Elem().Kind() == reflect.Struct) {
 				continue
 			}
+			if field.IsBlank && field.HasDefaultValue {
+				if str, ok := field.TagSettingsGet("DEFAULT"); ok && str != "" {
+					field.SetDefaultValue(str)
+				}
+			}
 			placeholders = append(placeholders, mainScope.AddToVars(fields[i].Field.Interface()))
 		}
 		placeholdersStr := "(" + strings.Join(placeholders, ", ") + ")"

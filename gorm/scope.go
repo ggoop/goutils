@@ -490,7 +490,6 @@ func (scope *Scope) quoteIfPossible(str string) string {
 	}
 	return str
 }
-
 func (scope *Scope) scan(rows *sql.Rows, columns []string, fields []*Field) {
 	var (
 		ignored            interface{}

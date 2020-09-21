@@ -70,6 +70,12 @@ func createCallback(scope *Scope) {
 		for _, field := range scope.Fields() {
 			if scope.changeableField(field) {
 				if field.IsNormal && !field.IsIgnored {
+					//处理默认值
+					if field.IsBlank && field.HasDefaultValue {
+						if str, ok := field.TagSettingsGet("DEFAULT"); ok && str != "" {
+							field.SetDefaultValue(str)
+						}
+					}
 					if field.IsBlank && field.HasDefaultValue {
 						blankColumnsWithDefaultValue = append(blankColumnsWithDefaultValue, scope.Quote(field.DBName))
 						scope.InstanceSet("gorm:blank_columns_with_default_value", blankColumnsWithDefaultValue)
