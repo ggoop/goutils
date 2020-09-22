@@ -101,28 +101,27 @@ type MDField struct {
 func (s MDField) String() string {
 	return fmt.Sprintf("%s-%s-%s", s.Code, s.Name, s.TypeType)
 }
-
-func (s MDField) CompileDefaultValue() interface{} {
-	if s.DefaultValue == "" || s.TypeID == "" {
+func (s MDField) CompileValue(value interface{}) interface{} {
+	if value == nil || value == "" || s.TypeID == "" {
 		return nil
 	}
 	if s.TypeID == FIELD_TYPE_STRING || s.TypeID == FIELD_TYPE_TEXT || s.TypeID == FIELD_TYPE_XML {
-		return s.DefaultValue
+		return value
 	}
 	if s.TypeID == FIELD_TYPE_INT {
-		return utils.ToInt(s.DefaultValue)
+		return utils.ToInt(value)
 	}
 	if s.TypeID == FIELD_TYPE_BOOL {
-		return SBool_Parse(s.DefaultValue)
+		return SBool_Parse(value)
 	}
 	if s.TypeID == FIELD_TYPE_JSON {
-		return SJson_Parse(s.DefaultValue)
+		return SJson_Parse(value)
 	}
 	if s.TypeID == FIELD_TYPE_DATE || s.TypeID == FIELD_TYPE_DATETIME {
-		return CreateTime(s.DefaultValue)
+		return CreateTime(value)
 	}
 	if s.TypeID == FIELD_TYPE_DECIMAL {
-		if v, err := decimal.NewFromString(s.DefaultValue); err != nil {
+		if v, err := decimal.NewFromString(utils.ToString(value)); err != nil {
 			return glog.Error(err)
 		} else {
 			return v
