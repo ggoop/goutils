@@ -29,7 +29,7 @@ func NewTimePtr() *Time {
 	return CreateTimePtr(time.Now())
 }
 func CreateTime(value interface{}) Time {
-	if value == nil {
+	if value == "" || value == nil {
 		return Time{}
 	}
 	if v, ok := value.(time.Time); ok {
@@ -126,14 +126,6 @@ func (t Time) Value() (driver.Value, error) {
 
 // Scan valueof time.Time
 func (t *Time) Scan(v interface{}) error {
-	if v == nil {
-		*t = Time{}
-		return nil
-	}
-	value, ok := v.(time.Time)
-	if ok {
-		*t = Time{Time: value}
-		return nil
-	}
-	return fmt.Errorf("can not convert %v to timestamp", v)
+	*t = CreateTime(v)
+	return nil
 }
