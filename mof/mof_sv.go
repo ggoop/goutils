@@ -58,9 +58,9 @@ func (s *MOFSv) createTable(item md.MDEntity) {
 	var tags []string
 	for i, _ := range item.Fields {
 		field := item.Fields[i]
-		if field.IsNormal {
+		if field.IsNormal.IsTrue() {
 			tags = append(tags, s.buildColumnNameString(field))
-			if field.IsPrimaryKey {
+			if field.IsPrimaryKey.IsTrue() {
 				primaryKeys = append(primaryKeys, s.quote(field.DbName))
 			}
 		}
@@ -91,7 +91,7 @@ func (s *MOFSv) updateTable(item md.MDEntity, old md.MDEntity) {
 				break
 			}
 		}
-		if !field.IsNormal {
+		if !field.IsNormal.IsTrue() {
 			continue
 		}
 		newString := s.buildColumnNameString(field)
@@ -119,9 +119,9 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 
 	*/
 	fieldStr := s.quote(item.DbName)
-	if item.IsPrimaryKey && item.TypeID == md.FIELD_TYPE_STRING {
+	if item.IsPrimaryKey.IsTrue() && item.TypeID == md.FIELD_TYPE_STRING {
 		fieldStr += " NVARCHAR(36)  NOT NULL"
-	} else if item.IsPrimaryKey && item.TypeID == md.FIELD_TYPE_INT {
+	} else if item.IsPrimaryKey.IsTrue() && item.TypeID == md.FIELD_TYPE_INT {
 		fieldStr += " BIGINT NOT NULL"
 	} else if item.TypeID == "string" {
 		if item.Length <= 0 {
@@ -135,7 +135,7 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 			fieldStr += fmt.Sprintf(" NVARCHAR(%d)", item.Length)
 		}
 
-		if !item.Nullable {
+		if !item.Nullable.IsTrue() {
 			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
@@ -150,7 +150,7 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 		}
 	} else if item.TypeID == md.FIELD_TYPE_DATE || item.TypeID == md.FIELD_TYPE_DATETIME {
 		fieldStr += " TIMESTAMP"
-		if !item.Nullable {
+		if !item.Nullable.IsTrue() {
 			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
@@ -184,7 +184,7 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 		}
 	} else if item.TypeType == md.TYPE_ENTITY || item.TypeType == md.TYPE_ENUM {
 		fieldStr += " nvarchar(36)"
-		if !item.Nullable {
+		if !item.Nullable.IsTrue() {
 			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
@@ -195,7 +195,7 @@ func (s *MOFSv) buildColumnNameString(item md.MDField) string {
 			item.Length = 255
 		}
 		fieldStr += fmt.Sprintf(" nvarchar(%d)", item.Length)
-		if !item.Nullable {
+		if !item.Nullable.IsTrue() {
 			fieldStr += " NOT NULL"
 		}
 		if item.DefaultValue != "" {
@@ -261,11 +261,11 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 			for f, _ := range entity.Fields {
 				field := entity.Fields[f]
 				itemCodes = append(itemCodes, field.Code)
-				field.IsNormal = true
+				field.IsNormal = md.SBool_True
 				if field.DbName == "-" {
-					field.IsNormal = false
+					field.IsNormal = md.SBool_False
 				}
-				if field.DbName == "" && field.IsNormal {
+				if field.DbName == "" && field.IsNormal.IsTrue() {
 					field.DbName = utils.SnakeString(field.Code)
 				}
 				oldField := md.MDField{}
@@ -283,7 +283,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 					if field.AssociationKey == "" {
 						field.AssociationKey = "ID"
 					}
-					field.IsNormal = false
+					field.IsNormal = md.SBool_False
 				} else if field.TypeType == md.TYPE_ENUM { //枚举
 					if field.Kind == "" {
 						field.Kind = "belongs_to"
@@ -294,7 +294,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 					if field.AssociationKey == "" {
 						field.AssociationKey = "ID"
 					}
-					field.IsNormal = false
+					field.IsNormal = md.SBool_False
 				}
 				if s.repo.Model(oldField).Order("id").Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
 					datas := make(map[string]interface{})

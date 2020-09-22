@@ -2,11 +2,13 @@ package md
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"strings"
 
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/repositories"
+	"github.com/ggoop/goutils/utils"
 )
 
 const (
@@ -98,6 +100,35 @@ type MDField struct {
 
 func (s MDField) String() string {
 	return fmt.Sprintf("%s-%s-%s", s.Code, s.Name, s.TypeType)
+}
+
+func (s MDField) CompileDefaultValue() interface{} {
+	if s.DefaultValue == "" || s.TypeID == "" {
+		return nil
+	}
+	if s.TypeID == FIELD_TYPE_STRING || s.TypeID == FIELD_TYPE_TEXT || s.TypeID == FIELD_TYPE_XML {
+		return s.DefaultValue
+	}
+	if s.TypeID == FIELD_TYPE_INT {
+		return utils.ToInt(s.DefaultValue)
+	}
+	if s.TypeID == FIELD_TYPE_BOOL {
+		return SBool_Parse(s.DefaultValue)
+	}
+	if s.TypeID == FIELD_TYPE_JSON {
+		return SJson_Parse(s.DefaultValue)
+	}
+	if s.TypeID == FIELD_TYPE_DATE || s.TypeID == FIELD_TYPE_DATETIME {
+		return CreateTime(s.DefaultValue)
+	}
+	if s.TypeID == FIELD_TYPE_DECIMAL {
+		if v, err := decimal.NewFromString(s.DefaultValue); err != nil {
+			return glog.Error(err)
+		} else {
+			return v
+		}
+	}
+	return nil
 }
 func (s *MDField) MD() *Mder {
 	return &Mder{ID: "md.field", Domain: md_domain, Name: "属性"}
