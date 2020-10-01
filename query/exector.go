@@ -179,6 +179,9 @@ func (m *exector) Take(mysql *repositories.MysqlRepo) (map[string]interface{}, e
 }
 func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}, error) {
 	q, err := m.PrepareQuery(mysql)
+	if err != nil {
+		return nil, err
+	}
 	if m.page > 0 && m.pageSize > 0 {
 		q = q.Limit(m.pageSize).Offset((m.page - 1) * m.pageSize)
 	}
@@ -204,7 +207,7 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 		for index, column := range columns {
 			dbType := strings.ToUpper(columnTypeMap[column])
 			switch dbType {
-			case "VARCHAR", "TEXT", "NVARCHAR", "STRING":
+			case "VARCHAR", "TEXT", "NVARCHAR", "STRING", "VARCHAR2", "CHAR", "CLOB":
 				var ignored sql.NullString
 				values[index] = &ignored
 				break
@@ -212,11 +215,11 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				var ignored md.SBool
 				values[index] = &ignored
 				break
-			case "INT", "BIGINT", "TINYINT":
+			case "INT", "BIGINT", "TINYINT", "INTEGER":
 				var ignored sql.NullInt64
 				values[index] = &ignored
 				break
-			case "DECIMAL":
+			case "DECIMAL", "NUMBER":
 				var ignored decimal.Decimal
 				values[index] = &ignored
 				break
@@ -244,6 +247,8 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				resultItem[column] = *v
 			} else if v, ok := values[index].(*md.Time); ok && !v.IsZero() {
 				resultItem[column] = v.Format(md.Layout_YYYYMMDDHHIISS)
+			} else if v == nil {
+				resultItem[column] = v
 			} else {
 				resultItem[column] = *v
 			}
@@ -255,7 +260,9 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 func (m *exector) PrepareQuery(mysql *repositories.MysqlRepo) (*gorm.DB, error) {
 	//parse
 	for _, v := range m.froms {
-		m.parseFromField(v)
+		if err := m.parseFromField(v); err != nil {
+			return nil, err
+		}
 	}
 	for _, v := range m.selects {
 		m.parseSelectField(v)
@@ -410,7 +417,7 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 		if t.Path == "" || t.IsMain {
 			continue
 		}
-		relationship := m.parseField(t.Path)
+		relationship, _ := m.parseField(t.Path)
 		if relationship == nil {
 			glog.Errorf("找不到关联字段")
 			continue
@@ -455,7 +462,7 @@ func (m *exector) replaceFieldString(expr string) string {
 	matched := r.FindAllStringSubmatch(expr, -1)
 	for _, match := range matched {
 		tag = true
-		field := m.parseField(match[1])
+		field, _ := m.parseField(match[1])
 		if field != nil {
 			expr = strings.ReplaceAll(expr, match[0], fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
 		}
@@ -466,7 +473,7 @@ func (m *exector) replaceFieldString(expr string) string {
 		matched := r.FindAllStringSubmatch(expr, -1)
 		for _, match := range matched {
 			tag = true
-			field := m.parseField(match[1])
+			field, _ := m.parseField(match[1])
 			if field != nil {
 				expr = strings.ReplaceAll(expr, match[0], fmt.Sprintf("%s.%s", field.Entity.Alia, field.Field.DbName))
 			}
@@ -484,7 +491,7 @@ func (m *exector) parseWhereField(value *qWhere) {
 		}
 	}
 }
-func (m *exector) parseFromField(value *oqlFrom) {
+func (m *exector) parseFromField(value *oqlFrom) error {
 	items := strings.Split(strings.TrimSpace(value.Query), ",")
 	strs := make([]string, 0)
 	for _, item := range items {
@@ -492,41 +499,45 @@ func (m *exector) parseFromField(value *oqlFrom) {
 		if len(parts) == 1 {
 			parts = append(parts, "")
 		}
-		form := m.parseEntity(parts[0], parts[len(parts)-1])
+		form, err := m.parseEntity(parts[0], parts[len(parts)-1])
+		if err != nil {
+			return err
+		}
 		form.IsMain = true
 		strs = append(strs, fmt.Sprintf("%s  %s", form.Entity.TableName, form.Alia))
 	}
 	value.Expr = strings.Join(strs, ",")
+	return nil
 }
 func (m *exector) parseSelectField(value *oqlSelect) {
 	value.Expr = m.replaceFieldString(value.Query)
 }
 
 // 解析实体
-func (m *exector) parseEntity(id, path string) *oqlEntity {
+func (m *exector) parseEntity(id, path string) (*oqlEntity, error) {
 	path = strings.ToLower(strings.TrimSpace(path))
 	if v, ok := m.entities[path]; ok {
-		return v
+		return v, nil
 	}
 	entity := md.GetEntity(id)
 	if entity == nil {
-		glog.Errorf("找不到实体 %v", id)
-		return nil
+		return nil, glog.Errorf("找不到实体 %v", id)
 	}
 	v := m.formatEntity(entity)
 	v.Sequence = len(m.entities) + 1
 	v.Alia = fmt.Sprintf("a%v", v.Sequence)
 	v.Path = path
 	m.entities[path] = v
-	return v
+	return v, nil
 }
 
 // 解析字段
-func (m *exector) parseField(fieldPath string) *oqlField {
+func (m *exector) parseField(fieldPath string) (*oqlField, error) {
 	fieldPath = strings.ToLower(strings.TrimSpace(fieldPath))
 	if v, ok := m.fields[fieldPath]; ok {
-		return v
+		return v, nil
 	}
+	var err error
 	start := 0
 	parts := strings.Split(fieldPath, ".")
 	var mainFrom *oqlFrom
@@ -563,18 +574,22 @@ func (m *exector) parseField(fieldPath string) *oqlField {
 		}
 		mdField := entity.Entity.GetField(part)
 		if mdField == nil {
-			return nil
+			return nil, nil
 		}
 		field := m.formatField(entity, mdField)
 		field.Path = path
 		m.fields[path] = field
 		if i < len(parts)-1 {
-			entity = m.parseEntity(mdField.TypeID, path)
+			entity, err = m.parseEntity(mdField.TypeID, path)
+			if err != nil {
+				return nil, err
+			}
+
 		} else {
-			return field
+			return field, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // fieldA

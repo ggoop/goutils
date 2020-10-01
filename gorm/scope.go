@@ -1035,10 +1035,10 @@ func (scope *Scope) count(value interface{}) *Scope {
 				scope.prepareQuerySQL()
 				scope.Search = &search{}
 				scope.Search.Select("count(*)")
-				scope.Search.Table(fmt.Sprintf("( %s ) AS count_table", scope.SQL))
+				scope.Search.Table(fmt.Sprintf("( %s ) count_table", scope.SQL))
 			} else {
 				scope.Search.Select("count(*) FROM ( SELECT count(*) as name ")
-				scope.Search.group += " ) AS count_table"
+				scope.Search.group += " )  count_table"
 			}
 		} else {
 			scope.Search.Select("count(*)")
