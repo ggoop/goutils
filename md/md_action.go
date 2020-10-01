@@ -6,7 +6,7 @@ package md
 type MDActionCommand struct {
 	ID        string `gorm:"primary_key;size:50" json:"id"` //save,delete
 	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
 	PageID    string `gorm:"size:50;name:页面" json:"page_id"` //common为公共动作
 	Code      string `gorm:"size:50;name:编码" json:"code"`
 	Name      string `gorm:"size:50;name:名称" json:"name"`
@@ -27,7 +27,7 @@ func (s *MDActionCommand) MD() *Mder {
 type MDActionRule struct {
 	ID        string `gorm:"primary_key;size:50" json:"id"` //领域.规则：md.save，ui.save
 	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
 	Domain    string `gorm:"size:50;name:领域" json:"domain"` //common为公共动作
 	Code      string `gorm:"size:50;name:编码" json:"code"`
 	Name      string `gorm:"size:50;name:名称" json:"name"`

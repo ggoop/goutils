@@ -18,7 +18,7 @@ const (
 type MDEntity struct {
 	ID        string `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
 	Type      string `gorm:"size:50"` // simple，entity，enum，interface，dto,view
 	Domain    string `gorm:"size:50;name:领域" json:"domain"`
 	Code      string `gorm:"size:100;index:code_idx"`
@@ -59,7 +59,7 @@ func (s *MDEntity) GetField(code string) *MDField {
 type MDEntityRelation struct {
 	ID        string `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt *Time  `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
 	ParentID  string `gorm:"size:50;name:页面"`
 	ChildID   string `gorm:"size:50;name:动作ID"`
 	Kind      string `gorm:"name:参数"` //inherit，interface，
@@ -72,7 +72,7 @@ func (s *MDEntityRelation) MD() *Mder {
 type MDField struct {
 	ID             string    `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt      Time      `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt      *Time     `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt      Time      `gorm:"name:更新时间" json:"updated_at"`
 	EntityID       string    `gorm:"size:50;unique_index:uix"`
 	Entity         *MDEntity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
 	Code           string    `gorm:"size:50;unique_index:uix"`
@@ -167,7 +167,7 @@ func GetEntity(id string) *MDEntity {
 type MDFilter struct {
 	ID         string `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt  Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt  *Time  `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt  Time   `gorm:"name:更新时间" json:"updated_at"`
 	OwnerID    string `gorm:"size:50;index:ownerIdx;name:拥有者ID" json:"owner_id"`   //查询
 	OwnerType  string `gorm:"size:50;index:ownerIdx;name:拥有者类型" json:"owner_type"` //查询
 	OwnerField string `gorm:"size:50;index:ownerIdx;name:所属字段" json:"owner_field"` //字段名称

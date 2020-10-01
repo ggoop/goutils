@@ -3,7 +3,7 @@ package md
 type MDPage struct {
 	ID         string         `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt  Time           `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt  *Time          `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt  Time           `gorm:"name:更新时间" json:"updated_at"`
 	Type       string         `gorm:"size:50;name:类型" json:"type"` //page，ref，app
 	Domain     string         `gorm:"size:50;name:领域" json:"domain"`
 	EntID      string         `gorm:"size:50;name:企业" json:"ent_id"`
@@ -24,7 +24,7 @@ func (s *MDPage) MD() *Mder {
 type MDPageWidget struct {
 	ID          string         `gorm:"primary_key;size:50" json:"id"`
 	CreatedAt   Time           `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt   *Time          `gorm:"name:更新时间" json:"updated_at"`
+	UpdatedAt   Time           `gorm:"name:更新时间" json:"updated_at"`
 	EntID       string         `gorm:"size:36;name:企业" json:"ent_id"`
 	PageID      string         `gorm:"size:36;name:页面" json:"page_id"` //page，ref，app
 	Element     string         `gorm:"size:20;name:元素" json:"element"`
