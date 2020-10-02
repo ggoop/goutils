@@ -14,6 +14,7 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 
 	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 func setIdentityInsert(scope *gorm.Scope) {
@@ -222,7 +223,7 @@ func (mssql) NormalizeIndexAndColumn(indexName, columnName string) (string, stri
 	return indexName, columnName
 }
 
-func (mssql) AdjustSql(sql *gorm.SqlStruct) *gorm.SqlStruct {
+func (mssql) AdjustSql(sql *utils.SqlStruct) *utils.SqlStruct {
 	return sql
 }
 func currentDatabaseAndTable(dialect gorm.Dialect, tableName string) (string, string) {

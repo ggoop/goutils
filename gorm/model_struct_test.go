@@ -4,25 +4,25 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 type ModelA struct {
-	gorm.Model
+	utils.Model
 	Name string
 
 	ModelCs []ModelC `gorm:"foreignkey:OtherAID"`
 }
 
 type ModelB struct {
-	gorm.Model
+	utils.Model
 	Name string
 
 	ModelCs []ModelC `gorm:"foreignkey:OtherBID"`
 }
 
 type ModelC struct {
-	gorm.Model
+	utils.Model
 	Name string
 
 	OtherAID uint64

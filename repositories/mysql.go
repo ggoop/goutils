@@ -9,6 +9,7 @@ import (
 
 	"github.com/ggoop/goutils/configs"
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/utils"
 
 	"github.com/ggoop/goutils/gorm"
 )
@@ -37,7 +38,6 @@ func Open() *MysqlRepo {
 
 	db.LogMode(configs.Default.App.Debug)
 	repo := createMysqlRepo(db)
-
 	return repo
 }
 func (s *MysqlRepo) Close() error {
@@ -73,7 +73,7 @@ func getDsnString(inDb bool) string {
 	//mysql => user:password@(localhost)/dbname?charset=utf8&parseTime=True&loc=Local
 	str := ""
 	// 创建连接
-	if configs.Default.Db.Driver == gorm.DRIVER_MSSQL {
+	if configs.Default.Db.Driver == utils.ORM_DRIVER_MSSQL {
 		var buf bytes.Buffer
 		buf.WriteString("sqlserver://")
 		buf.WriteString(configs.Default.Db.Username)
@@ -100,7 +100,7 @@ func getDsnString(inDb bool) string {
 		str = buf.String()
 		return str
 	}
-	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+	if configs.Default.Db.Driver == utils.ORM_DRIVER_GODROR {
 		//[username/[password]@]host[:port][/service_name][?param1=value1&...&paramN=valueN]
 		var buf bytes.Buffer
 		buf.WriteString(configs.Default.Db.Username)
@@ -148,7 +148,7 @@ func createMysqlRepo(db *gorm.DB) *MysqlRepo {
 	return repo
 }
 func DestroyDB(name string) error {
-	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+	if configs.Default.Db.Driver == utils.ORM_DRIVER_GODROR {
 		glog.Errorf("godror driver can not drop database")
 		return nil
 	}
@@ -160,7 +160,7 @@ func DestroyDB(name string) error {
 	return db.Exec(fmt.Sprintf("Drop Database if exists %s;", name)).Error
 }
 func CreateDB(name string) {
-	if configs.Default.Db.Driver == gorm.DRIVER_GODROR {
+	if configs.Default.Db.Driver == utils.ORM_DRIVER_GODROR {
 		glog.Errorf("godror driver can not create database")
 		return
 	}
@@ -169,7 +169,7 @@ func CreateDB(name string) {
 		glog.Errorf("orm failed to initialized: %v", err)
 	}
 	script := ""
-	if configs.Default.Db.Driver == gorm.DRIVER_MSSQL {
+	if configs.Default.Db.Driver == utils.ORM_DRIVER_MSSQL {
 		script = fmt.Sprintf("if not exists (select * from sysdatabases where name='%s') begin create database %s end;", name, name)
 	} else {
 		script = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s COLLATE %s;", name, configs.Default.Db.Charset, configs.Default.Db.Collation)

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 var keyNameRegex = regexp.MustCompile("[^a-zA-Z0-9]+")
@@ -162,7 +164,7 @@ func (commonDialect) SelectFromDummyTable() string {
 	return ""
 }
 
-func (commonDialect) AdjustSql(sql *SqlStruct) *SqlStruct {
+func (commonDialect) AdjustSql(sql *utils.SqlStruct) *utils.SqlStruct {
 	return sql
 }
 

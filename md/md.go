@@ -8,15 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ggoop/goutils/gorm"
-
 	"github.com/ggoop/goutils/di"
 	"github.com/ggoop/goutils/glog"
+	"github.com/ggoop/goutils/gorm"
 	"github.com/ggoop/goutils/repositories"
+	"github.com/ggoop/goutils/utils"
 )
 
 // 数据状态
 const (
+	STATE_FIELD = "_state"
 	//临时
 	STATE_TEMP = "temp"
 	//创建的
@@ -153,7 +154,7 @@ func (s *md) dataTypeOf(field *gorm.StructField) string {
 			if _, ok := fieldValue.Interface().(time.Time); ok {
 				sqlType = "datetime"
 			}
-			if _, ok := fieldValue.Interface().(Time); ok {
+			if _, ok := fieldValue.Interface().(utils.Time); ok {
 				sqlType = "datetime"
 			}
 			if _, ok := fieldValue.Interface().(decimal.Decimal); ok {
@@ -219,7 +220,7 @@ func (m *md) Migrate() {
 	}
 	codes := make([]string, 0)
 	for _, field := range scope.GetModelStruct().StructFields {
-		newField := MDField{Code: field.Name, DbName: field.DBName, IsPrimaryKey: SBool_Parse(field.IsPrimaryKey), IsNormal: SBool_Parse(field.IsNormal), Name: field.TagSettings["NAME"], EntityID: entity.ID}
+		newField := MDField{Code: field.Name, DbName: field.DBName, IsPrimaryKey: utils.SBool_Parse(field.IsPrimaryKey), IsNormal: utils.SBool_Parse(field.IsNormal), Name: field.TagSettings["NAME"], EntityID: entity.ID}
 		if field.IsIgnored {
 			continue
 		}

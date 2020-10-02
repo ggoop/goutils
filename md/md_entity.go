@@ -16,17 +16,17 @@ const (
 )
 
 type MDEntity struct {
-	ID        string `gorm:"primary_key;size:50" json:"id"`
-	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
-	Type      string `gorm:"size:50"` // simple，entity，enum，interface，dto,view
-	Domain    string `gorm:"size:50;name:领域" json:"domain"`
-	Code      string `gorm:"size:100;index:code_idx"`
-	Name      string `gorm:"size:100"`
-	TableName string `gorm:"size:50"`
-	Memo      string `gorm:"size:500"`
-	Tags      string `gorm:"size:500"`
-	System    SBool
+	ID        string     `gorm:"primary_key;size:50" json:"id"`
+	CreatedAt utils.Time `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt utils.Time `gorm:"name:更新时间" json:"updated_at"`
+	Type      string     `gorm:"size:50"` // simple，entity，enum，interface，dto,view
+	Domain    string     `gorm:"size:50;name:领域" json:"domain"`
+	Code      string     `gorm:"size:100;index:code_idx"`
+	Name      string     `gorm:"size:100"`
+	TableName string     `gorm:"size:50"`
+	Memo      string     `gorm:"size:500"`
+	Tags      string     `gorm:"size:500"`
+	System    utils.SBool
 	Fields    []MDField `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:EntityID"`
 	cache     map[string]MDField
 }
@@ -57,12 +57,12 @@ func (s *MDEntity) GetField(code string) *MDField {
 }
 
 type MDEntityRelation struct {
-	ID        string `gorm:"primary_key;size:50" json:"id"`
-	CreatedAt Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt Time   `gorm:"name:更新时间" json:"updated_at"`
-	ParentID  string `gorm:"size:50;name:页面"`
-	ChildID   string `gorm:"size:50;name:动作ID"`
-	Kind      string `gorm:"name:参数"` //inherit，interface，
+	ID        string     `gorm:"primary_key;size:50" json:"id"`
+	CreatedAt utils.Time `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt utils.Time `gorm:"name:更新时间" json:"updated_at"`
+	ParentID  string     `gorm:"size:50;name:页面"`
+	ChildID   string     `gorm:"size:50;name:动作ID"`
+	Kind      string     `gorm:"name:参数"` //inherit，interface，
 }
 
 func (s *MDEntityRelation) MD() *Mder {
@@ -70,16 +70,16 @@ func (s *MDEntityRelation) MD() *Mder {
 }
 
 type MDField struct {
-	ID             string    `gorm:"primary_key;size:50" json:"id"`
-	CreatedAt      Time      `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt      Time      `gorm:"name:更新时间" json:"updated_at"`
-	EntityID       string    `gorm:"size:50;unique_index:uix"`
-	Entity         *MDEntity `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
-	Code           string    `gorm:"size:50;unique_index:uix"`
-	Name           string    `gorm:"size:50"`
-	DbName         string    `gorm:"size:50"`
-	IsNormal       SBool
-	IsPrimaryKey   SBool
+	ID             string     `gorm:"primary_key;size:50" json:"id"`
+	CreatedAt      utils.Time `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt      utils.Time `gorm:"name:更新时间" json:"updated_at"`
+	EntityID       string     `gorm:"size:50;unique_index:uix"`
+	Entity         *MDEntity  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false"`
+	Code           string     `gorm:"size:50;unique_index:uix"`
+	Name           string     `gorm:"size:50"`
+	DbName         string     `gorm:"size:50"`
+	IsNormal       utils.SBool
+	IsPrimaryKey   utils.SBool
 	ForeignKey     string    `gorm:"size:50"` //外键
 	AssociationKey string    `gorm:"size:50"` //Association
 	Kind           string    `gorm:"size:50"`
@@ -90,7 +90,7 @@ type MDField struct {
 	Memo           string    `gorm:"size:500"`
 	Tags           string    `gorm:"size:500"` // code,name,ent,import
 	Sequence       int
-	Nullable       SBool
+	Nullable       utils.SBool
 	Length         int
 	Precision      int
 	DefaultValue   string
@@ -112,13 +112,13 @@ func (s MDField) CompileValue(value interface{}) interface{} {
 		return utils.ToInt(value)
 	}
 	if s.TypeID == FIELD_TYPE_BOOL {
-		return SBool_Parse(value)
+		return utils.SBool_Parse(value)
 	}
 	if s.TypeID == FIELD_TYPE_JSON {
-		return SJson_Parse(value)
+		return utils.SJson_Parse(value)
 	}
 	if s.TypeID == FIELD_TYPE_DATE || s.TypeID == FIELD_TYPE_DATETIME {
-		return CreateTime(value)
+		return utils.CreateTime(value)
 	}
 	if s.TypeID == FIELD_TYPE_DECIMAL {
 		if v, err := decimal.NewFromString(utils.ToString(value)); err != nil {
@@ -144,8 +144,7 @@ func GetEntity(id string) *MDEntity {
 	if mdCache == nil {
 		mdCache = make(map[string]*MDEntity)
 	}
-	id = strings.ToLower(id)
-	if v, ok := mdCache[id]; ok {
+	if v, ok := mdCache[strings.ToLower(id)]; ok {
 		return v
 	}
 	item := &MDEntity{}
@@ -165,20 +164,20 @@ func GetEntity(id string) *MDEntity {
 }
 
 type MDFilter struct {
-	ID         string `gorm:"primary_key;size:50" json:"id"`
-	CreatedAt  Time   `gorm:"name:创建时间" json:"created_at"`
-	UpdatedAt  Time   `gorm:"name:更新时间" json:"updated_at"`
-	OwnerID    string `gorm:"size:50;index:ownerIdx;name:拥有者ID" json:"owner_id"`   //查询
-	OwnerType  string `gorm:"size:50;index:ownerIdx;name:拥有者类型" json:"owner_type"` //查询
-	OwnerField string `gorm:"size:50;index:ownerIdx;name:所属字段" json:"owner_field"` //字段名称
-	Field      string `gorm:"size:50;name:字段" json:"field"`                        //如果#开始，则表示标记，需要使用表达式
-	Expr       string `gorm:"size:200;name:表达式" json:"expr"`
-	Title      string `gorm:"name:显示名称" json:"title"`
-	DataType   string `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime
-	DataSource string `gorm:"name:数据来源" json:"data_source"`       //条件：where| 常量：const| 变量：var|context:上下文
-	Operator   string `gorm:"size:50;name:操作符号" json:"operator"`
-	Value      SJson  `gorm:"name:值" json:"value"`
-	Enabled    SBool  `gorm:"default:true;name:启用" json:"enabled"`
+	ID         string      `gorm:"primary_key;size:50" json:"id"`
+	CreatedAt  utils.Time  `gorm:"name:创建时间" json:"created_at"`
+	UpdatedAt  utils.Time  `gorm:"name:更新时间" json:"updated_at"`
+	OwnerID    string      `gorm:"size:50;index:ownerIdx;name:拥有者ID" json:"owner_id"`   //查询
+	OwnerType  string      `gorm:"size:50;index:ownerIdx;name:拥有者类型" json:"owner_type"` //查询
+	OwnerField string      `gorm:"size:50;index:ownerIdx;name:所属字段" json:"owner_field"` //字段名称
+	Field      string      `gorm:"size:50;name:字段" json:"field"`                        //如果#开始，则表示标记，需要使用表达式
+	Expr       string      `gorm:"size:200;name:表达式" json:"expr"`
+	Title      string      `gorm:"name:显示名称" json:"title"`
+	DataType   string      `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime
+	DataSource string      `gorm:"name:数据来源" json:"data_source"`       //条件：where| 常量：const| 变量：var|context:上下文
+	Operator   string      `gorm:"size:50;name:操作符号" json:"operator"`
+	Value      utils.SJson `gorm:"name:值" json:"value"`
+	Enabled    utils.SBool `gorm:"default:true;name:启用" json:"enabled"`
 }
 
 func (s *MDFilter) MD() *Mder {

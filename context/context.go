@@ -58,7 +58,7 @@ func (s *Context) ValueReplace(value string) string {
 		r, _ := regexp.Compile(REGEXP_FIELD_EXP)
 		matched := r.FindAllStringSubmatch(value, -1)
 		for _, match := range matched {
-			v:=s.GetValue( utils.SnakeString(match[1]))
+			v := s.GetValue(utils.SnakeString(match[1]))
 			value = strings.ReplaceAll(value, match[0], v)
 		}
 	}
@@ -261,4 +261,8 @@ func (d *Context) Scan(value interface{}) error {
 func (d Context) Value() (driver.Value, error) {
 	data, err := d.MarshalJSON()
 	return string(data), err
+}
+
+func (t Context) IsValid() bool {
+	return t.data != nil && len(t.data) > 0
 }

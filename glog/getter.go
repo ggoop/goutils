@@ -13,6 +13,7 @@ import (
 
 var (
 	sqlRegexp                = regexp.MustCompile(`\?`)
+	oracleRegexp             = regexp.MustCompile(`\:\d+`)
 	numericPlaceHolderRegexp = regexp.MustCompile(`\$\d+`)
 )
 
@@ -93,7 +94,15 @@ func (l *Logger) sqlLog(values ...interface{}) {
 			}
 
 			// differentiate between $n placeholders or else treat like ?
-			if numericPlaceHolderRegexp.MatchString(values[3].(string)) {
+			if oracleRegexp.MatchString(values[3].(string)) {
+				formattedValuesLength := len(formattedValues)
+				for index, value := range oracleRegexp.Split(values[3].(string), -1) {
+					sql += value
+					if index < formattedValuesLength {
+						sql += formattedValues[index]
+					}
+				}
+			} else if numericPlaceHolderRegexp.MatchString(values[3].(string)) {
 				sql = values[3].(string)
 				for index, value := range formattedValues {
 					placeholder := fmt.Sprintf(`\$%d([^\d]|$)`, index+1)

@@ -1,28 +1,26 @@
-package gorm
+package utils
 
 import (
 	"fmt"
-	"time"
 )
 
 // Model base model definition, including fields `ID`, `CreatedAt`, `UpdatedAt`, `DeletedAt`, which could be embedded in your models
 //    type User struct {
 //      gorm.Model
 //    }
-type Model struct {
+type ORMModel struct {
 	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
+	CreatedAt Time
+	UpdatedAt Time
 }
 
 const (
 	//mssql
-	DRIVER_MSSQL = "mssql"
+	ORM_DRIVER_MSSQL = "mssql"
 	//mysql
-	DRIVER_MYSQL = "mysql"
+	ORM_DRIVER_MYSQL = "mysql"
 	//oracle :godror
-	DRIVER_GODROR = "godror"
+	ORM_DRIVER_GODROR = "godror"
 )
 
 type SqlStruct struct {
@@ -40,6 +38,13 @@ type SqlStruct struct {
 
 func (sql SqlStruct) CombinedConditionSql() string {
 	return sql.JoinSql + sql.WhereSql + sql.GroupSql + sql.HavingSql + sql.OrderSql + sql.LimitSql
+}
+
+func (sql SqlStruct) AddWhere(where string) {
+	if sql.WhereSql == "" {
+		sql.WhereSql = "where"
+	}
+	sql.WhereSql = fmt.Sprintf("%v and %v", sql.WhereSql, where)
 }
 func (sql SqlStruct) CombinedSql() string {
 	return fmt.Sprintf("SELECT %v FROM %v %v", sql.SelectSql, sql.FromSql, sql.CombinedConditionSql())

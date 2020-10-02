@@ -1,12 +1,10 @@
-package md
+package utils
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 
 	"github.com/ggoop/goutils/glog"
-	"github.com/ggoop/goutils/gorm"
-	"github.com/ggoop/goutils/utils"
 )
 
 // JSONTime format json time field by myself
@@ -98,7 +96,7 @@ func (t *SJson) Scan(v interface{}) error {
 	if v == nil {
 		return nil
 	}
-	jsonStr := utils.ToString(v)
+	jsonStr := ToString(v)
 	if jsonStr == "" {
 		t.value = nil
 		t.jsonString = jsonStr
@@ -121,8 +119,8 @@ func (t *SJson) Scan(v interface{}) error {
 	}
 	return nil
 }
-func (t SJson) GormDataType(d gorm.Dialect) string {
-	if d.GetName() == gorm.DRIVER_GODROR {
+func (t SJson) OrmDataType(driver string) string {
+	if driver == ORM_DRIVER_GODROR {
 		return "VARCHAR2(4000)"
 	}
 	return "text"
@@ -131,11 +129,11 @@ func (t SJson) GetObject(obj interface{}) error {
 	return json.Unmarshal([]byte(t.jsonString), &obj)
 }
 func (t SJson) GetString() string {
-	return utils.ToString(t.value)
+	return ToString(t.value)
 }
 func (t SJson) GetValue() interface{} {
 	return t.value
 }
 func (t SJson) GetInterfaceSlice() []interface{} {
-	return utils.ToInterfaceSlice(t.value)
+	return ToInterfaceSlice(t.value)
 }

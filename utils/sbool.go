@@ -1,11 +1,8 @@
-package md
+package utils
 
 import (
 	"bytes"
 	"database/sql/driver"
-
-	"github.com/ggoop/goutils/gorm"
-	"github.com/ggoop/goutils/utils"
 )
 
 // JSONTime format json time field by myself
@@ -108,7 +105,7 @@ func (t SBool) _ToBoolValue(value interface{}) string {
 	}
 	bValue := ""
 
-	sb := utils.ToString(value)
+	sb := ToString(value)
 	if sb == "true" || sb == "1" || sb == "t" {
 		bValue = "1"
 	} else if sb == "false" || sb == "0" || sb == "f" {
@@ -116,8 +113,8 @@ func (t SBool) _ToBoolValue(value interface{}) string {
 	}
 	return bValue
 }
-func (t SBool) GormDataType(d gorm.Dialect) string {
-	if d.GetName() == gorm.DRIVER_GODROR {
+func (t SBool) OrmDataType(driver string) string {
+	if driver == ORM_DRIVER_GODROR {
 		return "varchar2(2)"
 	}
 	return "varchar(2)"

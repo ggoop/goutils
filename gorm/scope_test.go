@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 func NameIn1And2(d *gorm.DB) *gorm.DB {
@@ -81,7 +82,7 @@ func TestFailedValuer(t *testing.T) {
 
 func TestDropTableWithTableOptions(t *testing.T) {
 	type UserWithOptions struct {
-		gorm.Model
+		utils.Model
 	}
 	DB.AutoMigrate(&UserWithOptions{})
 

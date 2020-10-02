@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 // Dialect interface contains behaviors that differ across SQL database
@@ -55,7 +57,7 @@ type Dialect interface {
 
 	// CurrentDatabase return current database name
 	CurrentDatabase() string
-	AdjustSql(sql *SqlStruct) *SqlStruct
+	AdjustSql(sql *utils.SqlStruct) *utils.SqlStruct
 }
 
 var dialectsMap = map[string]Dialect{}
@@ -104,7 +106,13 @@ var ParseFieldStructForDialect = func(field *StructField, dialect Dialect) (fiel
 	}); ok {
 		dataType = gormDataType.GormDataType(dialect)
 	}
-
+	if dataType == "" {
+		if gormDataType, ok := fieldValue.Interface().(interface {
+			OrmDataType(string) string
+		}); ok {
+			dataType = gormDataType.OrmDataType(dialect.GetName())
+		}
+	}
 	// Get scanner's real value
 	if dataType == "" {
 		var getScannerValue func(reflect.Value)

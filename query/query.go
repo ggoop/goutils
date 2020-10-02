@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/ggoop/goutils/md"
+	"github.com/ggoop/goutils/utils"
 )
 
 const md_domain string = "query"
@@ -48,24 +49,24 @@ func (s *Query) MD() *md.Mder {
 
 type QueryColumn struct {
 	md.Model
-	QueryID   string   `gorm:"size:50;name:查询" json:"query_id"`
-	OwnerID   string   `gorm:"size:50;name:所属ID" json:"owner_id"`
-	OwnerType string   `gorm:"size:50;name:所属类型" json:"owner_type"`
-	Field     string   `gorm:"size:50;name:字段" json:"field"`
-	Expr      string   `gorm:"size:200;name:表达式" json:"expr"` //字段表达式
-	Name      string   `gorm:"size:50;name:栏目编码" json:"name"`
-	Title     string   `gorm:"name:显示名称" json:"title"`
-	Width     string   `gorm:"name:宽度" json:"width"`
-	Tags      string   `gorm:"name:标签" json:"tags"`                //is_q
-	DataType  string   `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
-	KeyField  md.SBool `gorm:"default:false;name:是主键字段" json:"key_field"`
-	CodeField md.SBool `gorm:"default:false;name:是编码字段" json:"code_field"`
-	NameField md.SBool `gorm:"default:false;name:是名称字段" json:"name_field"`
-	Sequence  int      `gorm:"name:顺序" json:"sequence"`
-	Fixed     md.SBool `gorm:"default:false;name:固定" json:"fixed"`
-	IsDefault md.SBool `gorm:"default:false;name:默认" json:"is_default"`
-	Hidden    md.SBool `gorm:"default:false;name:隐藏" json:"hidden"`
-	Enabled   md.SBool `gorm:"name:启用;default:true" json:"enabled"`
+	QueryID   string      `gorm:"size:50;name:查询" json:"query_id"`
+	OwnerID   string      `gorm:"size:50;name:所属ID" json:"owner_id"`
+	OwnerType string      `gorm:"size:50;name:所属类型" json:"owner_type"`
+	Field     string      `gorm:"size:50;name:字段" json:"field"`
+	Expr      string      `gorm:"size:200;name:表达式" json:"expr"` //字段表达式
+	Name      string      `gorm:"size:50;name:栏目编码" json:"name"`
+	Title     string      `gorm:"name:显示名称" json:"title"`
+	Width     string      `gorm:"name:宽度" json:"width"`
+	Tags      string      `gorm:"name:标签" json:"tags"`                //is_q
+	DataType  string      `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
+	KeyField  utils.SBool `gorm:"default:false;name:是主键字段" json:"key_field"`
+	CodeField utils.SBool `gorm:"default:false;name:是编码字段" json:"code_field"`
+	NameField utils.SBool `gorm:"default:false;name:是名称字段" json:"name_field"`
+	Sequence  int         `gorm:"name:顺序" json:"sequence"`
+	Fixed     utils.SBool `gorm:"default:false;name:固定" json:"fixed"`
+	IsDefault utils.SBool `gorm:"default:false;name:默认" json:"is_default"`
+	Hidden    utils.SBool `gorm:"default:false;name:隐藏" json:"hidden"`
+	Enabled   utils.SBool `gorm:"name:启用;default:true" json:"enabled"`
 }
 
 func (s *QueryColumn) MD() *md.Mder {
@@ -74,18 +75,18 @@ func (s *QueryColumn) MD() *md.Mder {
 
 type QueryOrder struct {
 	md.Model
-	QueryID   string   `gorm:"size:50;name:查询" json:"query_id"`
-	OwnerID   string   `gorm:"size:50;name:所属ID" json:"owner_id"`
-	OwnerType string   `gorm:"size:50;name:所属类型" json:"owner_type"`
-	Field     string   `gorm:"size:50;name:字段"  json:"field"`
-	Expr      string   `gorm:"size:200;name:表达式" json:"expr"` //字段表达式
-	Title     string   `gorm:"name:显示名称" json:"title"`
-	Order     string   `gorm:"name:排序方式"  json:"order"` //desc,asc
-	Fixed     md.SBool `gorm:"default:false;name:固定" json:"fixed"`
-	Enabled   md.SBool `gorm:"default:true;name:启用" json:"enabled"`
-	IsDefault md.SBool `gorm:"default:false;name:默认" json:"is_default"`
-	Hidden    md.SBool `gorm:"default:false;name:隐藏" json:"hidden"`
-	Sequence  int      `gorm:"default:0;name:顺序"  json:"sequence"`
+	QueryID   string      `gorm:"size:50;name:查询" json:"query_id"`
+	OwnerID   string      `gorm:"size:50;name:所属ID" json:"owner_id"`
+	OwnerType string      `gorm:"size:50;name:所属类型" json:"owner_type"`
+	Field     string      `gorm:"size:50;name:字段"  json:"field"`
+	Expr      string      `gorm:"size:200;name:表达式" json:"expr"` //字段表达式
+	Title     string      `gorm:"name:显示名称" json:"title"`
+	Order     string      `gorm:"name:排序方式"  json:"order"` //desc,asc
+	Fixed     utils.SBool `gorm:"default:false;name:固定" json:"fixed"`
+	Enabled   utils.SBool `gorm:"default:true;name:启用" json:"enabled"`
+	IsDefault utils.SBool `gorm:"default:false;name:默认" json:"is_default"`
+	Hidden    utils.SBool `gorm:"default:false;name:隐藏" json:"hidden"`
+	Sequence  int         `gorm:"default:0;name:顺序"  json:"sequence"`
 }
 
 func (s *QueryOrder) MD() *md.Mder {
@@ -105,13 +106,13 @@ type QueryWhere struct {
 	DataType   string        `gorm:"size:50;name:字段类型" json:"data_type"` //sys.query.data.type，string,enum,entity,bool,datetime
 	DataSource string        `gorm:"name:数据来源" json:"data_source"`
 	Operator   string        `gorm:"size:50;name:操作符号" json:"operator"`
-	Value      md.SJson      `gorm:"name:值" json:"value"`
+	Value      utils.SJson   `gorm:"name:值" json:"value"`
 	Sequence   int           `gorm:"name:顺序" json:"sequence"`
-	Fixed      md.SBool      `gorm:"default:false;name:固定" json:"fixed"`
-	IsDefault  md.SBool      `gorm:"default:false;name:默认" json:"is_default"`
-	IsBasic    md.SBool      `gorm:"default:false;name:常用条件" json:"is_basic"`
-	Enabled    md.SBool      `gorm:"default:true;name:启用" json:"enabled"`
-	Hidden     md.SBool      `gorm:"default:false;name:隐藏" json:"hidden"`
+	Fixed      utils.SBool   `gorm:"default:false;name:固定" json:"fixed"`
+	IsDefault  utils.SBool   `gorm:"default:false;name:默认" json:"is_default"`
+	IsBasic    utils.SBool   `gorm:"default:false;name:常用条件" json:"is_basic"`
+	Enabled    utils.SBool   `gorm:"default:true;name:启用" json:"enabled"`
+	Hidden     utils.SBool   `gorm:"default:false;name:隐藏" json:"hidden"`
 	Filters    []QueryFilter `gorm:"-" json:"filters"`
 	Children   []QueryWhere  `gorm:"association_autoupdate:false;association_autocreate:false;association_save_reference:false;foreignkey:ParentID;name:子条件" json:"children"`
 }
@@ -122,17 +123,17 @@ func (s *QueryWhere) MD() *md.Mder {
 
 type QueryFilter struct {
 	md.Model
-	QueryID    string   `gorm:"size:50;name:查询ID" json:"query_id"`    //查询
-	OwnerField string   `gorm:"size:50;name:所属字段" json:"owner_field"` //字段名称
-	Field      string   `gorm:"size:50;name:字段" json:"field"`         //如果#开始，则表示标记，需要使用表达式
-	Expr       string   `gorm:"size:200;name:表达式" json:"expr"`
-	Title      string   `gorm:"name:显示名称" json:"title"`
-	DataType   string   `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime
-	DataSource string   `gorm:"name:数据来源" json:"data_source"`       //条件：where| 常量：const| 变量：var
-	Operator   string   `gorm:"size:50;name:操作符号" json:"operator"`
-	Value      md.SJson `gorm:"name:值" json:"value"`
-	Sequence   int      `gorm:"name:顺序" json:"sequence"`
-	Enabled    md.SBool `gorm:"default:true;name:启用" json:"enabled"`
+	QueryID    string      `gorm:"size:50;name:查询ID" json:"query_id"`    //查询
+	OwnerField string      `gorm:"size:50;name:所属字段" json:"owner_field"` //字段名称
+	Field      string      `gorm:"size:50;name:字段" json:"field"`         //如果#开始，则表示标记，需要使用表达式
+	Expr       string      `gorm:"size:200;name:表达式" json:"expr"`
+	Title      string      `gorm:"name:显示名称" json:"title"`
+	DataType   string      `gorm:"size:50;name:字段类型" json:"data_type"` //string,bool,datetime
+	DataSource string      `gorm:"name:数据来源" json:"data_source"`       //条件：where| 常量：const| 变量：var
+	Operator   string      `gorm:"size:50;name:操作符号" json:"operator"`
+	Value      utils.SJson `gorm:"name:值" json:"value"`
+	Sequence   int         `gorm:"name:顺序" json:"sequence"`
+	Enabled    utils.SBool `gorm:"default:true;name:启用" json:"enabled"`
 }
 
 func (s *QueryFilter) MD() *md.Mder {

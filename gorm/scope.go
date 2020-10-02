@@ -10,7 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 // Scope contain current operation's information when you perform any operation on the database
@@ -339,8 +340,8 @@ func (scope *Scope) QuotedTableName() (name string) {
 
 	return scope.Quote(scope.TableName())
 }
-func (scope *Scope) CombinedSql() *SqlStruct {
-	sql := &SqlStruct{}
+func (scope *Scope) CombinedSql() *utils.SqlStruct {
+	sql := &utils.SqlStruct{}
 	sql.SelectSql = scope.selectSQL()
 	sql.FromSql = scope.QuotedTableName()
 	sql.JoinSql = scope.joinsSQL()
@@ -1060,7 +1061,7 @@ func (scope *Scope) typeName() string {
 }
 
 // trace print sql log
-func (scope *Scope) trace(t time.Time) {
+func (scope *Scope) trace(t utils.Time) {
 	if len(scope.SQL) > 0 {
 		scope.db.slog(scope.SQL, t, scope.SQLVars...)
 	}

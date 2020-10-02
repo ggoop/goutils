@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 type User struct {
@@ -90,7 +90,7 @@ type Address struct {
 }
 
 type Language struct {
-	gorm.Model
+	utils.Model
 	Name  string
 	Users []User `gorm:"many2many:user_languages;"`
 }
@@ -215,7 +215,7 @@ type Post struct {
 }
 
 type Category struct {
-	gorm.Model
+	utils.Model
 	Name string
 
 	Categories []Category
@@ -223,7 +223,7 @@ type Category struct {
 }
 
 type Comment struct {
-	gorm.Model
+	utils.Model
 	PostId  int64
 	Content string
 	Post    Post
@@ -524,7 +524,7 @@ func TestModifyColumnType(t *testing.T) {
 	}
 
 	type ModifyColumnType struct {
-		gorm.Model
+		utils.Model
 		Name1 string `gorm:"length:100"`
 		Name2 string `gorm:"length:200"`
 	}
@@ -545,18 +545,18 @@ func TestIndexWithPrefixLength(t *testing.T) {
 	}
 
 	type IndexWithPrefix struct {
-		gorm.Model
+		utils.Model
 		Name        string
 		Description string `gorm:"type:text;index:idx_index_with_prefixes_length(100)"`
 	}
 	type IndexesWithPrefix struct {
-		gorm.Model
+		utils.Model
 		Name         string
 		Description1 string `gorm:"type:text;index:idx_index_with_prefixes_length(100)"`
 		Description2 string `gorm:"type:text;index:idx_index_with_prefixes_length(100)"`
 	}
 	type IndexesWithPrefixAndWithoutPrefix struct {
-		gorm.Model
+		utils.Model
 		Name        string `gorm:"index:idx_index_with_prefixes_length"`
 		Description string `gorm:"type:text;index:idx_index_with_prefixes_length(100)"`
 	}

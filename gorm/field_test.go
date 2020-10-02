@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 type CalculateField struct {
-	gorm.Model
+	utils.Model
 	Name     string
 	Children []CalculateFieldChild
 	Category CalculateFieldCategory
@@ -22,13 +22,13 @@ type EmbeddedField struct {
 }
 
 type CalculateFieldChild struct {
-	gorm.Model
+	utils.Model
 	CalculateFieldID uint
 	Name             string
 }
 
 type CalculateFieldCategory struct {
-	gorm.Model
+	utils.Model
 	CalculateFieldID uint
 	Name             string
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/utils"
@@ -50,10 +49,10 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 		for i := range fields {
 			field := fields[i]
 			if field.Name == "CreatedAt" && field.IsBlank {
-				fields[i].Set(time.Now())
+				fields[i].Set(utils.NewTime())
 			}
 			if field.Name == "UpdatedAt" && field.IsBlank {
-				fields[i].Set(time.Now())
+				fields[i].Set(utils.NewTime())
 			}
 			if field.IsPrimaryKey && field.IsBlank {
 				if field.Name == "ID" && field.Field.Type().Kind() == reflect.String {
@@ -79,32 +78,48 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 		mainScope.SQLVars = append(mainScope.SQLVars, scope.SQLVars...)
 
 		if itemCount >= MaxBatchs {
-			mainScope.Raw(fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-				mainScope.QuotedTableName(),
-				strings.Join(quoted, ", "),
-				strings.Join(placeholdersArr, ", "),
-			))
-			_, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...)
-
+			if err := s.batchInsertSave(mainScope, quoted, placeholdersArr); err != nil {
+				mainScope.SQLVars = make([]interface{}, 0)
+				return err
+			}
 			itemCount = 0
 			placeholdersArr = make([]string, 0, MaxBatchs)
 			mainScope.SQLVars = make([]interface{}, 0)
-
-			if err != nil {
-				return err
-			}
 		}
 	}
 	if len(placeholdersArr) > 0 && itemCount > 0 {
-		mainScope.Raw(fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-			mainScope.QuotedTableName(),
-			strings.Join(quoted, ", "),
-			strings.Join(placeholdersArr, ", "),
-		))
-		if _, err := mainScope.SQLDB().Exec(mainScope.SQL, mainScope.SQLVars...); err != nil {
-			glog.Error(err)
+		if err := s.batchInsertSave(mainScope, quoted, placeholdersArr); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+func (s *DB) batchInsertSave(scope *Scope, quoted []string, placeholders []string) error {
+	driverName := scope.Dialect().GetName()
+	var sql string
+	if driverName == utils.ORM_DRIVER_GODROR {
+		//insert all
+		//into tableA(user_name,address) values('aaa','henan')
+		//into tableA(user_name,address) values('bbb','shanghai')
+		//into tableA(user_name,address) values('ccc','beijing')
+		//select * from dual;
+		parts := make([]string, 0, len(placeholders))
+		for _, p := range placeholders {
+			parts = append(parts, fmt.Sprintf("INTO %s (%s) VALUES %s", scope.QuotedTableName(), strings.Join(quoted, ", "), p))
+		}
+
+		sql = fmt.Sprintf("INSERT ALL %s \r select 1 from dual", strings.Join(parts, " \r"))
+	} else {
+		sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
+			scope.QuotedTableName(),
+			strings.Join(quoted, ", "),
+			strings.Join(placeholders, ", "),
+		)
+	}
+	scope.Raw(sql)
+	if _, err := scope.SQLDB().Exec(scope.SQL, scope.SQLVars...); err != nil {
+		glog.Error(err)
+		return err
 	}
 	return nil
 }

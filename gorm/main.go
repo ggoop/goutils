@@ -8,7 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 // DB contains information for current db connection
@@ -33,7 +34,7 @@ type DB struct {
 	singularTable bool
 
 	// function to be used to override the creating of a new timestamp
-	nowFuncOverride func() time.Time
+	nowFuncOverride func() utils.Time
 }
 
 type logModeValue int
@@ -165,14 +166,14 @@ func (s *DB) LogMode(enable bool) *DB {
 }
 
 // SetNowFuncOverride set the function to be used when creating a new timestamp
-func (s *DB) SetNowFuncOverride(nowFuncOverride func() time.Time) *DB {
+func (s *DB) SetNowFuncOverride(nowFuncOverride func() utils.Time) *DB {
 	s.nowFuncOverride = nowFuncOverride
 	return s
 }
 
 // Get a new timestamp, using the provided nowFuncOverride on the DB instance if set,
 // otherwise defaults to the global NowFunc()
-func (s *DB) nowFunc() time.Time {
+func (s *DB) nowFunc() utils.Time {
 	if s.nowFuncOverride != nil {
 		return s.nowFuncOverride()
 	}
@@ -874,8 +875,8 @@ func (s *DB) log(v ...interface{}) {
 	}
 }
 
-func (s *DB) slog(sql string, t time.Time, vars ...interface{}) {
+func (s *DB) slog(sql string, t utils.Time, vars ...interface{}) {
 	if s.logMode == detailedLogMode {
-		s.print("sql", fileWithLineNum(), NowFunc().Sub(t), sql, vars, s.RowsAffected)
+		s.print("sql", fileWithLineNum(), NowFunc().Sub(t.Time), sql, vars, s.RowsAffected)
 	}
 }

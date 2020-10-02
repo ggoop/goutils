@@ -3,7 +3,6 @@ package reg
 import (
 	"strings"
 
-	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -13,7 +12,7 @@ type RegObject struct {
 	Address       string        `json:"address"`
 	PublicAddress string        `json:"public_address"`
 	Content       string        `json:"content"`
-	Time          *md.Time      `json:"time"`
+	Time          *utils.Time   `json:"time"`
 	Configs       *utils.Config `json:"configs"`
 }
 

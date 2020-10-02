@@ -7,11 +7,11 @@ import (
 	"fmt"
 	_ "github.com/godror/godror"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ggoop/goutils/gorm"
+	"github.com/ggoop/goutils/utils"
 )
 
 func init() {
@@ -38,7 +38,6 @@ func (godror) BindVar(i int) string {
 func (godror) Quote(key string) string {
 	return fmt.Sprintf(`"%s"`, strings.ToUpper(key))
 }
-
 func (s *godror) DataTypeOf(field *gorm.StructField) string {
 	var dataValue, sqlType, size, additionalType = gorm.ParseFieldStructForDialect(field, s)
 
@@ -134,23 +133,75 @@ func (s godror) CurrentDatabase() (name string) {
 }
 
 func (s godror) LimitAndOffsetSQL(limit, offset interface{}) (sql string, err error) {
-	if limit != nil {
-		if parsedLimit, err := strconv.ParseInt(fmt.Sprint(limit), 0, 0); err == nil && parsedLimit >= 0 {
-			sql += fmt.Sprintf(" ROWNUM <= %d", limit)
-		}
-	}
 	return
 }
 
-func (godror) AdjustSql(sql *gorm.SqlStruct) *gorm.SqlStruct {
-	if sql.LimitSql != "" {
-		if sql.WhereSql != "" {
-			sql.WhereSql = fmt.Sprintf("%v and %v", sql.WhereSql, sql.LimitSql)
-
-		} else {
-			sql.WhereSql = fmt.Sprintf("WHERE %v", sql.LimitSql)
+func (godror) AdjustSql(sql *utils.SqlStruct) *utils.SqlStruct {
+	if sql.LimitNum > 0 {
+		offset := sql.OffsetNum
+		if offset < 0 {
+			offset = 0
 		}
-		sql.LimitSql = ""
+		needPager := true
+		if sql.LimitNum == 1 { // id查询不需要
+			where := strings.ToLower(strings.ReplaceAll(sql.WhereSql, " ", ""))
+			if strings.Contains(where, "(id=") {
+				needPager = false
+			}
+		}
+		if sql.OrderSql == "" && needPager { //无排序
+			//SELECT *
+			//FROM (SELECT ROWNUM AS rowno, t.*
+			//          FROM DONORINFO t
+			//          WHERE t.BIRTHDAY BETWEEN TO_DATE ('19800101', 'yyyymmdd')
+			//          AND TO_DATE ('20060731', 'yyyymmdd')
+			//          AND ROWNUM <= page*size) table_alias
+			//WHERE table_alias.rowno > (page-1)*size;
+			if sql.SelectSql == "*" && !strings.Contains(sql.FromSql, " ") {
+				sql.FromSql = fmt.Sprintf("%s t", sql.FromSql)
+				sql.SelectSql = "t.*"
+			}
+			sql.SelectSql = fmt.Sprintf("ROWNUM as row_num,%v", sql.SelectSql)
+			sql.AddWhere(fmt.Sprintf("ROWNUM <= %v ", offset+sql.LimitNum))
+			sqlStr := sql.CombinedSql()
+
+			sql.SelectSql = "*"
+			sql.FromSql = fmt.Sprintf("(%s) table_pager", sqlStr)
+			sql.JoinSql = ""
+			sql.GroupSql = ""
+			sql.HavingSql = ""
+			sql.OrderSql = ""
+			sql.WhereSql = fmt.Sprintf("where table_pager.row_num> %v", sql.OffsetNum)
+
+			sqlStr = sql.CombinedSql()
+		} else if sql.OrderSql != "" && needPager { //有排序
+			//SELECT *
+			//FROM (SELECT ROWNUM AS rowno,r.*
+			//           FROM(SELECT * FROM DONORINFO t
+			//                    WHERE t.BIRTHDAY BETWEEN TO_DATE ('19800101', 'yyyymmdd')
+			//                    AND TO_DATE ('20060731', 'yyyymmdd')
+			//                    ORDER BY t.BIRTHDAY desc
+			//                   ) r
+			//           where ROWNUM <= page*size
+			//          ) table_alias
+			//WHERE table_alias.rowno > (page-1)*size;
+
+			if sql.SelectSql == "*" && !strings.Contains(sql.FromSql, " ") {
+				sql.FromSql = fmt.Sprintf("%s t", sql.FromSql)
+				sql.SelectSql = "t.*"
+			}
+
+			sqlStr := sql.CombinedSql()
+
+			sql.SelectSql = "*"
+			sql.FromSql = fmt.Sprintf("(select ROWNUM as row_num,r.* from  (%s)  r where ROWNUM <= %v) table_pager", sqlStr, offset+sql.LimitNum)
+			sql.JoinSql = ""
+			sql.GroupSql = ""
+			sql.HavingSql = ""
+			sql.OrderSql = ""
+			sql.WhereSql = fmt.Sprintf("where table_pager.row_num> %v", sql.OffsetNum)
+			sqlStr = sql.CombinedSql()
+		}
 	}
 	return sql
 }

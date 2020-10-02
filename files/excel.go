@@ -8,7 +8,6 @@ import (
 	"path"
 
 	"github.com/ggoop/goutils/configs"
-	"github.com/ggoop/goutils/md"
 	"github.com/ggoop/goutils/utils"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
@@ -67,10 +66,10 @@ func GetMapIntValue(key string, row map[string]interface{}) int {
 	return utils.ToInt(v)
 }
 
-func GetMapSBoolValue(key string, row map[string]interface{}) md.SBool {
-	return md.SBool_Parse(GetMapValue(key, row))
+func GetMapSBoolValue(key string, row map[string]interface{}) utils.SBool {
+	return utils.SBool_Parse(GetMapValue(key, row))
 }
-func GetMapSJsonValue(key string, row map[string]interface{}) md.SJson {
+func GetMapSJsonValue(key string, row map[string]interface{}) utils.SJson {
 	str := GetMapStringValue(key, row)
 	var jsonData interface{}
 	if str != "" {
@@ -78,15 +77,15 @@ func GetMapSJsonValue(key string, row map[string]interface{}) md.SJson {
 			jsonData = str
 		}
 	}
-	return md.SJson_Parse(jsonData)
+	return utils.SJson_Parse(jsonData)
 }
-func GetMapTimeValue(key string, row map[string]interface{}) *md.Time {
+func GetMapTimeValue(key string, row map[string]interface{}) *utils.Time {
 	v := GetMapValue(key, row)
 	if v == nil {
 		return nil
 	}
 	if vv, ok := v.(string); ok {
-		return md.CreateTimePtr(vv)
+		return utils.CreateTimePtr(vv)
 	}
 	return nil
 }
@@ -286,7 +285,7 @@ func (s *ExcelSv) ToExcel(data *ToExcel) (*FileData, error) {
 		fileData.FileName = fmt.Sprintf("%s.%s", utils.GUID(), "xlsx")
 	}
 	if fileData.Dir == "" {
-		fileData.Dir = path.Join(configs.Default.App.Storage, "exports", md.NewTime().Format("200601"))
+		fileData.Dir = path.Join(configs.Default.App.Storage, "exports", utils.NewTime().Format("200601"))
 	}
 	utils.CreatePath(fileData.Dir)
 	fileData.FullPath = utils.JoinCurrentPath(path.Join(fileData.Dir, fileData.FileName))

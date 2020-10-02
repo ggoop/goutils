@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/ggoop/goutils/configs"
-	"github.com/ggoop/goutils/md"
-	"github.com/ggoop/goutils/utils"
 	"github.com/golang/glog"
 	"io"
 	"os"
 	"path"
+
+	"github.com/ggoop/goutils/configs"
+	"github.com/ggoop/goutils/utils"
 )
 
 var reg_store *regStoreSv
@@ -40,7 +40,7 @@ func (s *regStoreSv) Register() {
 	})
 }
 func (s *regStoreSv) Add(item RegObject) *RegObject {
-	item.Time = md.NewTimePtr()
+	item.Time = utils.NewTimePtr()
 	s.data[item.Key()] = &item
 	s.Store()
 

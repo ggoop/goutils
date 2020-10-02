@@ -1,4 +1,4 @@
-package md
+package utils
 
 import (
 	"database/sql/driver"
@@ -128,4 +128,7 @@ func (t Time) Value() (driver.Value, error) {
 func (t *Time) Scan(v interface{}) error {
 	*t = CreateTime(v)
 	return nil
+}
+func (d Time) Valid() bool {
+	return !d.IsZero()
 }

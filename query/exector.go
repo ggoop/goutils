@@ -212,7 +212,7 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				values[index] = &ignored
 				break
 			case "BOOL", "BOOLEAN":
-				var ignored md.SBool
+				var ignored utils.SBool
 				values[index] = &ignored
 				break
 			case "INT", "BIGINT", "TINYINT", "INTEGER":
@@ -224,7 +224,7 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 				values[index] = &ignored
 				break
 			case "TIMESTAMP", "DATE", "DATETIME":
-				var ignored md.Time
+				var ignored utils.Time
 				values[index] = &ignored
 				break
 			default:
@@ -239,14 +239,14 @@ func (m *exector) Query(mysql *repositories.MysqlRepo) ([]map[string]interface{}
 		for index, column := range columns {
 			if v, ok := values[index].(*sql.NullString); ok {
 				resultItem[column] = v.String
-			} else if v, ok := values[index].(*md.SBool); ok {
+			} else if v, ok := values[index].(*utils.SBool); ok {
 				resultItem[column] = v
 			} else if v, ok := values[index].(*sql.NullInt64); ok {
 				resultItem[column] = v.Int64
 			} else if v, ok := values[index].(*decimal.Decimal); ok {
 				resultItem[column] = *v
-			} else if v, ok := values[index].(*md.Time); ok && !v.IsZero() {
-				resultItem[column] = v.Format(md.Layout_YYYYMMDDHHIISS)
+			} else if v, ok := values[index].(*utils.Time); ok && !v.IsZero() {
+				resultItem[column] = v.Format(utils.Layout_YYYYMMDDHHIISS)
 			} else if v == nil {
 				resultItem[column] = v
 			} else {
@@ -322,22 +322,26 @@ func (m *exector) getWhereArgs(where IQWhere) []interface{} {
 		return nil
 	}
 	args := where.GetArgs()
+	dType := where.GetDataType()
 	for i, item := range args {
-		if where.GetDataType() == WHERE_TYPE_ENUM || where.GetDataType() == WHERE_TYPE_REF || where.GetDataType() == "" {
+		if dType == WHERE_TYPE_ENUM || dType == WHERE_TYPE_REF || dType == "" {
 			if v, ok := item.(map[string]interface{}); ok {
 				if v["_isRefObject"] != nil && v["id"] != nil {
 					args[i] = v["id"]
-				}
-				if v["_isEnumObject"] != nil && v["id"] != nil {
+				} else if v["_isEnumObject"] != nil && v["id"] != nil {
 					args[i] = v["id"]
+				} else if vv, ok := v["id"]; ok {
+					args[i] = vv
 				}
-			} else if v, ok := item.(md.SJson); ok {
+			} else if v, ok := item.(utils.SJson); ok {
 				args[i] = v.GetValue()
 			}
-		} else if where.GetDataType() == WHERE_TYPE_DATE {
-			args[i] = md.CreateTime(item).Format(md.Layout_YYYYMMDD)
-		} else if where.GetDataType() == WHERE_TYPE_DATETIME {
-			args[i] = md.CreateTime(item).Format(md.Layout_YYYYMMDDHHIISS)
+		} else if dType == WHERE_TYPE_DATE {
+			args[i] = utils.CreateTime(item).Format(utils.Layout_YYYYMMDD)
+		} else if dType == WHERE_TYPE_DATETIME {
+			args[i] = utils.CreateTime(item).Format(utils.Layout_YYYYMMDDHHIISS)
+		} else if dType == WHERE_TYPE_BOOL {
+			args[i] = utils.SBool_Parse(item)
 		}
 	}
 	return args
@@ -447,7 +451,11 @@ func (m *exector) buildJoins(queryDB *gorm.DB) *gorm.DB {
 		} else if relationship.Field.Kind == "has_many" {
 			fkey := t.Entity.GetField(relationship.Field.ForeignKey)
 			lkey := relationship.Entity.Entity.GetField(relationship.Field.AssociationKey)
-			queryDB = queryDB.Joins(fmt.Sprintf("left join %v  %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DbName, relationship.Entity.Alia, lkey.DbName))
+			if fkey != nil && lkey != nil {
+				queryDB = queryDB.Joins(fmt.Sprintf("left join %v  %v on %v.%v=%v.%v", t.Entity.TableName, t.Alia, t.Alia, fkey.DbName, relationship.Entity.Alia, lkey.DbName))
+			} else {
+				glog.Error("构建join 联系出错，", glog.String("ForeignKey", relationship.Field.ForeignKey), glog.String("AssociationKey", relationship.Field.AssociationKey))
+			}
 		}
 	}
 	return queryDB

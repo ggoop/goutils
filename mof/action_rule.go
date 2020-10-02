@@ -60,9 +60,9 @@ type PageViewDTO struct {
 	Name       string      `json:"name"`
 	EntityID   string      `json:"entity_id"`
 	PrimaryKey string      `json:"primary_key"`
-	Multiple   md.SBool    `json:"multiple"`
-	Nullable   md.SBool    `json:"nullable"`
-	IsMain     md.SBool    `json:"is_main"`
+	Multiple   utils.SBool `json:"multiple"`
+	Nullable   utils.SBool `json:"nullable"`
+	IsMain     utils.SBool `json:"is_main"`
 }
 
 func (s ReqContext) New() ReqContext {

@@ -20,12 +20,14 @@ import (
 	"time"
 
 	"github.com/erikstmartin/go-testdb"
+
 	"github.com/ggoop/goutils/gorm"
 	_ "github.com/ggoop/goutils/gorm/dialects/mssql"
 	_ "github.com/ggoop/goutils/gorm/dialects/mysql"
 	"github.com/ggoop/goutils/gorm/dialects/postgres"
 	_ "github.com/ggoop/goutils/gorm/dialects/sqlite"
 	"github.com/ggoop/goutils/now"
+	"github.com/ggoop/goutils/utils"
 )
 
 var (
@@ -1377,13 +1379,13 @@ func TestFloatColumnPrecision(t *testing.T) {
 
 func TestWhereUpdates(t *testing.T) {
 	type OwnerEntity struct {
-		gorm.Model
+		utils.Model
 		OwnerID   uint
 		OwnerType string
 	}
 
 	type SomeEntity struct {
-		gorm.Model
+		utils.Model
 		Name        string
 		OwnerEntity OwnerEntity `gorm:"polymorphic:Owner"`
 	}

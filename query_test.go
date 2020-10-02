@@ -16,8 +16,8 @@ import (
 type testTag struct {
 	ID     string `gorm:"primary_key;size:50" json:"id"`
 	Code   string `gorm:"size:2"`
-	Name   md.SBool
-	Json   md.SJson
+	Name   utils.SBool
+	Json   utils.SJson
 	TypeID string     `gorm:"size:10"`
 	Type   *md.MDEnum `gorm:"limit:md.type.enum"`
 	Field  md.MDField
@@ -59,7 +59,7 @@ func TestQueryMigrate(t *testing.T) {
 	md.Migrate(db, &testTag{})
 
 	items := make([]testTag, 0)
-	item := testTag{Json: md.SJson_Parse([]string{"fdsaf", "fdsafddddd"})}
+	item := testTag{Json: utils.SJson_Parse([]string{"fdsaf", "fdsafddddd"})}
 	//
 	db.Last(&item)
 	db.Find(&items)

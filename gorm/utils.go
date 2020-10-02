@@ -8,7 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/ggoop/goutils/utils"
 )
 
 // NowFunc returns current time, this function is exported in order to be able
@@ -17,8 +18,8 @@ import (
 //    gorm.NowFunc = func() time.Time {
 //      return time.Now().UTC()
 //    }
-var NowFunc = func() time.Time {
-	return time.Now()
+var NowFunc = func() utils.Time {
+	return utils.NewTime()
 }
 
 // Copied from golint

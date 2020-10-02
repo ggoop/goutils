@@ -39,11 +39,11 @@ func testOracle() {
 }
 
 type testTable struct {
-	ID       string   `gorm:"primary_key;size:50" json:"id"`
-	IsSystem int      `gorm:"default:11"`
-	Code     string   `gorm:"default:code11"`
-	Value    md.SJson `gorm:"default:1" json:"value"`
-	Enabled  md.SBool `gorm:"default:true;name:启用" json:"enabled"`
+	ID       string      `gorm:"primary_key;size:50" json:"id"`
+	IsSystem int         `gorm:"default:11"`
+	Code     string      `gorm:"default:code11"`
+	Value    utils.SJson `gorm:"default:1" json:"value"`
+	Enabled  utils.SBool `gorm:"default:true;name:启用" json:"enabled"`
 }
 
 func (s testTable) MD() *md.Mder {
