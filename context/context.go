@@ -43,14 +43,14 @@ const (
 	DefaultContextKey = "context"
 )
 
-func (s *Context) Copy() *Context {
+func (s *Context) Copy() Context {
 	c := New()
 	if s.data != nil {
 		for k, v := range s.data {
 			c.data[k] = v
 		}
 	}
-	return &c
+	return c
 }
 func (s *Context) ValueReplace(value string) string {
 	if s.data != nil {

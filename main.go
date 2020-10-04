@@ -1,9 +1,10 @@
 package main
 
 import (
+	"regexp"
+
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
-	"github.com/ggoop/goutils/repositories"
 	"github.com/ggoop/goutils/utils"
 )
 
@@ -11,31 +12,26 @@ func main() {
 	for i := 0; i < 10; i++ {
 		glog.Info(utils.GUID())
 	}
-	//testOracle()
+	testOracle()
 }
 func testOracle() {
-	repo := repositories.Default()
-	//md.Migrate(repo)
-	//md.InitMD_Completed = true
 
-	m := &testTable{}
-	//md.Migrate(repo, m)
+	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
+	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"
+	exp := "(?i)([\\S]+.*\\S)(?:\\s)(desc|asc)|([\\S]+.*[\\S]+)"
+	strList := []string{
+		"AAA as a",
+		" fieldAs desc ",
+		"fieldA+field asc",
+		" SUM( fieldA +    +fieldB +sum(fieldC)   )  AS AS ",
+		" SUM( fieldA ) ",
+	}
+	r := regexp.MustCompile(exp)
+	for _, str := range strList {
+		matched := r.FindStringSubmatch(str)
+		glog.Error(matched)
+	}
 
-	mList := make([]interface{}, 0)
-
-	mList = append(mList, m)
-
-	repo.BatchInsert(mList)
-
-	count := 0
-
-	//take
-	m = &testTable{}
-	repo.Model(testTable{}).Take(m, "is_system=?", 0)
-
-	glog.Error(repo.Model(testTable{}).Where("Is_System=?", 1).Count(&count).Error)
-	//
-	glog.Info(utils.GUID())
 }
 
 type testTable struct {

@@ -39,7 +39,6 @@ require (
 
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.42.0
-	github.com/ggoop/goutils => /Users/samw/project/ggoop/goutils
 	go.uber.org/atomic => github.com/uber-go/atomic v1.4.0
 	go.uber.org/multierr => github.com/uber-go/multierr v1.1.0
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20190701094942-4def268fd1a4
