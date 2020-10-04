@@ -2,6 +2,7 @@ package main
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
@@ -18,18 +19,16 @@ func testOracle() {
 
 	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
 	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"
-	exp := "(?i)([\\S]+.*\\S)(?:\\s)(desc|asc)|([\\S]+.*[\\S]+)"
+	exp := `(?i)([left|join|right|union]+)([A-Za-z0-9._])(?:[as|\s])?([A-Za-z0-9_])?`
 	strList := []string{
-		"AAA as a",
-		" fieldAs desc ",
-		"fieldA+field asc",
-		" SUM( fieldA +    +fieldB +sum(fieldC)   )  AS AS ",
-		" SUM( fieldA ) ",
+		"tableA a on aaa=dfds and dfd=ddd",
+		"tableB A on fdfd=dfd and ddd=sss",
 	}
 	r := regexp.MustCompile(exp)
 	for _, str := range strList {
 		matched := r.FindStringSubmatch(str)
-		glog.Error(matched)
+		matchStr := strings.Join(matched, "||")
+		glog.Error(matchStr)
 	}
 
 }

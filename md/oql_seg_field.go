@@ -1,25 +1,47 @@
 package md
 
-type OQLField interface {
-	GetQuery() string
-	GetAlias() string
-	GetArgs() []interface{}
+type oqlEntity struct {
+	Path     string
+	Entity   *MDEntity
+	Sequence int
+	IsMain   bool
+	Alias    string
 }
 type oqlField struct {
-	Origin interface{}
-	//表达式，如：sum(fieldA) as a
-	Query string
-	Alias string
-	Expr  string
-	Args  []interface{}
+	Entity *oqlEntity
+	Field  *MDField
+	Path   string
 }
 
-func (m oqlField) GetQuery() string {
-	return m.Query
+type OQLFrom struct {
+	Query string
+	Alias string
+	Args  []interface{}
+	expr  string
 }
-func (m oqlField) GetAlias() string {
-	return m.Alias
+
+type OQLJoin struct {
+	Type      OQLJoinType
+	Query     string
+	Alias     string
+	Condition string
+	Args      []interface{}
+	expr      string
 }
-func (m oqlField) GetArgs() []interface{} {
-	return m.Args
+type OQLSelect struct {
+	Query string
+	Alias string
+	Args  []interface{}
+	expr  string
+}
+type OQLGroup struct {
+	Query string
+	Args  []interface{}
+	expr  string
+}
+type OQLOrder struct {
+	Query string
+	Order OQLOrderType
+	Args  []interface{}
+	expr  string
 }
