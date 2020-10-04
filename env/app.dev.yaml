@@ -6,13 +6,13 @@ app:
     port: 3003    
     debug: true
 db:
-    # mysql,mssql,godror
+    # mysql,mssql,godror，分别为mysql,mssql,oracle驱动
     driver: mysql
-    # localhost
+    # 这里填写数据库服务器地址，本地填写 localhost
     host: localhost
-    # 3306,1433,1521
+    # 3306,1433,1521，一般mysql端口为3306，mssql端口为1422，oracle端口为1521
     port: 3306
-    # test,test,orcl
+    # 数据库名称，oracle：填写服务名，如orcl
     database: goutils
     # root ,sa ,scott
     username: root
@@ -21,8 +21,3 @@ log:
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info
   path: ./storage/logs
-p1: p1v
-p2: 
-    p22: p22v
-    p23: p22v
-    p24: p22v
