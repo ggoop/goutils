@@ -26,6 +26,28 @@ type testTag struct {
 func (s *testTag) MD() *md.Mder {
 	return &md.Mder{ID: "test.tag", Domain: "test", Name: "标签"}
 }
+
+func TestOQL(t *testing.T) {
+
+	oql := md.GetOQL().From("cbo_depts as a").Select("id as id,code as code,name")
+	oql.Where("id>?", 1)
+	parseValues := oql.Parse()
+	glog.Error(parseValues)
+	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
+	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"
+	exp := `\(.*,`
+	strList := []string{
+		"fieldA,fieldB",
+		"sum(fieldA,fieldB)",
+	}
+
+	r := regexp.MustCompile(exp)
+	for _, str := range strList {
+		matched := r.MatchString(str)
+		glog.Error(matched)
+	}
+
+}
 func TestEnumPreload(t *testing.T) {
 	repo := repositories.Default()
 
