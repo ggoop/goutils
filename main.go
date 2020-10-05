@@ -2,7 +2,6 @@ package main
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/md"
@@ -17,18 +16,22 @@ func main() {
 }
 func testOracle() {
 
+	oql := md.GetOQL().From("cbo_depts as a").Select("id as id,code as code,name")
+	oql.Where("id>?", 1)
+	parseValues := oql.Parse()
+	glog.Error(parseValues)
 	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
 	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"
-	exp := `(?i)([left|join|right|union]+)([A-Za-z0-9._])(?:[as|\s])?([A-Za-z0-9_])?`
+	exp := `\(.*,`
 	strList := []string{
-		"tableA a on aaa=dfds and dfd=ddd",
-		"tableB A on fdfd=dfd and ddd=sss",
+		"fieldA,fieldB",
+		"sum(fieldA,fieldB)",
 	}
+
 	r := regexp.MustCompile(exp)
 	for _, str := range strList {
-		matched := r.FindStringSubmatch(str)
-		matchStr := strings.Join(matched, "||")
-		glog.Error(matchStr)
+		matched := r.MatchString(str)
+		glog.Error(matched)
 	}
 
 }

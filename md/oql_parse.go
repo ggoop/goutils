@@ -9,7 +9,7 @@ import (
 	"github.com/ggoop/goutils/utils"
 )
 
-func (s *OQL) parseOQL(value interface{}) *OQL {
+func (s *OQL) Parse() map[string]interface{} {
 	for _, v := range s.froms {
 		s.parseFromField(v)
 	}
@@ -31,25 +31,67 @@ func (s *OQL) parseOQL(value interface{}) *OQL {
 	for _, v := range s.groups {
 		s.parseGroupField(v)
 	}
-	return s
-}
-
-func (s *OQL) parseFromField(value *OQLFrom) error {
-	//主表，使用别名作路径
-	form := s.parseEntity(value.Query, value.Alias)
-	if s.Error != nil {
-		return s.Error
-	}
-	form.IsMain = true
-	value.expr = fmt.Sprintf("%s  %s", form.Entity.TableName, form.Alias)
 	return nil
 }
-func (s *OQL) parseJoinField(value *OQLJoin) error {
+func (s OQL) GetFrom() map[string]interface{} {
+	if len(s.froms) == 0 {
+		return nil
+	}
+	return nil
+}
+func (s OQL) GetSelect() map[string]interface{} {
+	if len(s.selects) == 0 {
+		return nil
+	}
+	return nil
+}
+
+func (s OQL) GetWhere() map[string]interface{} {
+	if len(s.wheres) == 0 {
+		return nil
+	}
+	return nil
+}
+
+func (s OQL) GetHaving() map[string]interface{} {
+	if len(s.having) == 0 {
+		return nil
+	}
+	return nil
+}
+
+func (s OQL) GetGroup() map[string]interface{} {
+	if len(s.groups) == 0 {
+		return nil
+	}
+	return nil
+}
+
+func (s OQL) GetOrder() map[string]interface{} {
+	if len(s.orders) == 0 {
+		return nil
+	}
+	return nil
+}
+func (s *OQL) parseFromField(value *oqlFrom) {
 	//主表，使用别名作路径
 	form := s.parseEntity(value.Query, value.Alias)
-	if s.Error != nil {
-		return s.Error
+	parts := make([]string, 0)
+	if form != nil {
+		form.IsMain = true
+		parts = append(parts, form.Entity.TableName)
+		if form.Alias != "" {
+			parts = append(parts, form.Alias)
+		}
+	} else {
+		parts = append(parts, value.Query)
+		if value.Alias != "" {
+			parts = append(parts, value.Alias)
+		}
 	}
+	value.expr = strings.Join(parts, " ")
+}
+func (s *OQL) parseJoinField(value *oqlJoin) error {
 	joins := make([]string, 0)
 	switch value.Type {
 	case OQL_LEFT_JOIN:
@@ -59,11 +101,25 @@ func (s *OQL) parseJoinField(value *OQLJoin) error {
 	case OQL_FULL_JOIN:
 		joins = append(joins, "join")
 	}
-	joins = append(joins, fmt.Sprintf("%s  %s", form.Entity.TableName, form.Alias))
+	//主表，使用别名作路径
+	form := s.parseEntity(value.Query, value.Alias)
+	if form != nil {
+		joins = append(joins, form.Entity.TableName)
+		if form.Alias != "" {
+			joins = append(joins, form.Alias)
+		}
+	} else {
+		joins = append(joins, value.Query)
+		if value.Alias != "" {
+			joins = append(joins, value.Alias)
+		}
+	}
 	if value.Condition != "" {
 		condition := s.parseFieldExpr(value.Condition)
 		if condition != "" {
 			joins = append(joins, "on ", condition)
+		} else {
+			joins = append(joins, "on ", value.Condition)
 		}
 	}
 	value.expr = strings.Join(joins, " ")
@@ -77,13 +133,13 @@ func (s *OQL) parseWhereField(value *OQLWhere) {
 		}
 	}
 }
-func (s *OQL) parseSelectField(value *OQLSelect) {
+func (s *OQL) parseSelectField(value *oqlSelect) {
 	value.expr = s.parseFieldExpr(value.Query)
 }
-func (s *OQL) parseGroupField(value *OQLGroup) {
+func (s *OQL) parseGroupField(value *oqlGroup) {
 	value.expr = s.parseFieldExpr(value.Query)
 }
-func (s *OQL) parseOrderField(value *OQLOrder) {
+func (s *OQL) parseOrderField(value *oqlOrder) {
 	value.expr = s.parseFieldExpr(value.Query)
 }
 
@@ -102,7 +158,7 @@ func (s *OQL) parseFieldExpr(expr string) string {
 		str := match[1]
 		//带有括号的是函数，不需要解析
 		if strings.Index(str, utils.PARENTHESIS_LEFT) > 0 {
-			field, _ := s.parseField(str)
+			field, _ := s.parseEntityField(str)
 			if field != nil {
 				expr = strings.ReplaceAll(expr, str, fmt.Sprintf("%s.%s", field.Entity.Alias, field.Field.DbName))
 			}
@@ -116,7 +172,7 @@ func (s *OQL) formatEntity(entity *MDEntity) *oqlEntity {
 	e := oqlEntity{Entity: entity}
 	return &e
 }
-func (s *OQL) formatField(entity *oqlEntity, field *MDField) *oqlField {
+func (s *OQL) formatEntityField(entity *oqlEntity, field *MDField) *oqlField {
 	e := oqlField{Entity: entity, Field: field}
 	return &e
 }
@@ -140,14 +196,14 @@ func (s *OQL) parseEntity(id, path string) *oqlEntity {
 }
 
 // 解析字段
-func (s *OQL) parseField(fieldPath string) (*oqlField, error) {
+func (s *OQL) parseEntityField(fieldPath string) (*oqlField, error) {
 	fieldPath = strings.ToLower(strings.TrimSpace(fieldPath))
 	if v, ok := s.fields[fieldPath]; ok {
 		return v, nil
 	}
 	start := 0
 	parts := strings.Split(fieldPath, ".")
-	var mainFrom *OQLFrom
+	var mainFrom *oqlFrom
 	if len(parts) > 1 {
 		//如果主表有别名，则第一个字段为表
 		for i, v := range s.froms {
@@ -186,7 +242,7 @@ func (s *OQL) parseField(fieldPath string) (*oqlField, error) {
 		if mdField == nil {
 			return nil, nil
 		}
-		field := s.formatField(entity, mdField)
+		field := s.formatEntityField(entity, mdField)
 		field.Path = path
 		s.fields[path] = field
 		if i < len(parts)-1 {

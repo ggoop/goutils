@@ -20,6 +20,9 @@ const (
 	OQL_ORDER_ASC  OQLOrderType = 1
 )
 
-func GetOQL(names ...string) *OQL {
+type OQLOption struct {
+}
+
+func GetOQL(names ...OQLOption) *OQL {
 	return &OQL{}
 }

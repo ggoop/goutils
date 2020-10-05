@@ -45,6 +45,7 @@ func (s *commonActuator) PlaceholderWrap(dataTypes ...interface{}) string {
 }
 
 func (s *commonActuator) Count(oql *OQL, value interface{}) *OQL {
+	oql.Select(false).Select("count(*)")
 	return oql
 }
 func (s *commonActuator) Pluck(oql *OQL, column string, value interface{}) *OQL {

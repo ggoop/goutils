@@ -13,14 +13,14 @@ type oqlField struct {
 	Path   string
 }
 
-type OQLFrom struct {
+type oqlFrom struct {
 	Query string
 	Alias string
 	Args  []interface{}
 	expr  string
 }
 
-type OQLJoin struct {
+type oqlJoin struct {
 	Type      OQLJoinType
 	Query     string
 	Alias     string
@@ -28,18 +28,18 @@ type OQLJoin struct {
 	Args      []interface{}
 	expr      string
 }
-type OQLSelect struct {
+type oqlSelect struct {
 	Query string
 	Alias string
 	Args  []interface{}
 	expr  string
 }
-type OQLGroup struct {
+type oqlGroup struct {
 	Query string
 	Args  []interface{}
 	expr  string
 }
-type OQLOrder struct {
+type oqlOrder struct {
 	Query string
 	Order OQLOrderType
 	Args  []interface{}

@@ -419,6 +419,9 @@ func (s *MOFSv) AddPage(items []md.MDPage) error {
 				}
 			}
 		} else {
+			if entity.Code == "" {
+				entity.Code = entity.ID
+			}
 			if err := s.repo.Create(&entity).Error; err != nil {
 				return glog.Error(err)
 			}
