@@ -24,5 +24,16 @@ type OQLOption struct {
 }
 
 func GetOQL(names ...OQLOption) *OQL {
-	return &OQL{}
+	oql := OQL{}
+	oql.errors = make([]error, 0)
+	oql.entities = make(map[string]*oqlEntity)
+	oql.fields = make(map[string]*oqlField)
+	oql.froms = make([]*oqlFrom, 0)
+	oql.joins = make([]*oqlJoin, 0)
+	oql.selects = make([]*oqlSelect, 0)
+	oql.orders = make([]*oqlOrder, 0)
+	oql.wheres = make([]*OQLWhere, 0)
+	oql.groups = make([]*oqlGroup, 0)
+	oql.having = make([]*OQLWhere, 0)
+	return &oql
 }

@@ -3,13 +3,14 @@ package md
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/ggoop/goutils/glog"
 	"github.com/ggoop/goutils/utils"
 )
 
-func (s *OQL) Parse() map[string]interface{} {
+func (s *OQL) parse() error {
 	for _, v := range s.froms {
 		s.parseFromField(v)
 	}
@@ -31,63 +32,217 @@ func (s *OQL) Parse() map[string]interface{} {
 	for _, v := range s.groups {
 		s.parseGroupField(v)
 	}
-	return nil
-}
-func (s OQL) GetFrom() map[string]interface{} {
-	if len(s.froms) == 0 {
-		return nil
-	}
-	return nil
-}
-func (s OQL) GetSelect() map[string]interface{} {
-	if len(s.selects) == 0 {
-		return nil
-	}
-	return nil
+	return s.Error
 }
 
-func (s OQL) GetWhere() map[string]interface{} {
-	if len(s.wheres) == 0 {
-		return nil
+//=============== build
+func (s *OQL) buildFroms() *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	for _, v := range s.froms {
+		queries = append(queries, v.expr)
+		args = append(args, v.Args...)
+		statement.Affected++
 	}
-	return nil
+	statement.Query = strings.Join(queries, ",")
+	statement.Args = args
+	return statement
 }
 
-func (s OQL) GetHaving() map[string]interface{} {
-	if len(s.having) == 0 {
-		return nil
+func (s *OQL) buildJoins() *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	tables := make([]*oqlEntity, 0)
+	for _, v := range s.entities {
+		tables = append(tables, v)
 	}
-	return nil
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].Sequence < tables[j].Sequence
+	})
+	for _, t := range tables {
+		if t.Path == "" || t.IsMain {
+			continue
+		}
+		relationship, _ := s.parseEntityField(t.Path)
+		if relationship == nil {
+			glog.Errorf("找不到关联字段")
+			continue
+		}
+		if relationship.Field.Kind == KIND_TYPE_BELONGS_TO || relationship.Field.Kind == KIND_TYPE_HAS_ONE {
+			fkey := relationship.Entity.Entity.GetField(relationship.Field.ForeignKey)
+			lkey := t.Entity.GetField(relationship.Field.AssociationKey)
+			condition := ""
+			tag := false
+			if relationship.Field.TypeType == TYPE_ENUM {
+				if relationship.Field.Limit != "" {
+					condition = fmt.Sprintf(" and %v.entity_id=?", t.Alias)
+					queries = append(queries, fmt.Sprintf("left join %v  %v on %v.%v=%v.%v%v", t.Entity.TableName, t.Alias, t.Alias, "id", relationship.Entity.Alias, fkey.DbName, condition))
+					args = append(args, relationship.Field.Limit)
+					statement.Affected++
+					tag = true
+				}
+			}
+			if !tag {
+				queries = append(queries, fmt.Sprintf("left join %v  %v on %v.%v=%v.%v%v", t.Entity.TableName, t.Alias, t.Alias, lkey.DbName, relationship.Entity.Alias, fkey.DbName, condition))
+				statement.Affected++
+			}
+		} else if relationship.Field.Kind == "has_many" {
+			fkey := t.Entity.GetField(relationship.Field.ForeignKey)
+			lkey := relationship.Entity.Entity.GetField(relationship.Field.AssociationKey)
+			if fkey != nil && lkey != nil {
+				queries = append(queries, fmt.Sprintf("left join %v  %v on %v.%v=%v.%v", t.Entity.TableName, t.Alias, t.Alias, fkey.DbName, relationship.Entity.Alias, lkey.DbName))
+				statement.Affected++
+			} else {
+				glog.Error("构建join 联系出错，", glog.String("ForeignKey", relationship.Field.ForeignKey), glog.String("AssociationKey", relationship.Field.AssociationKey))
+			}
+		}
+	}
+	return statement
+}
+func (s *OQL) buildSelects() *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	for _, v := range s.selects {
+		if v.expr != "" {
+			queries = append(queries, v.expr)
+			args = append(args, v.Args...)
+			statement.Affected++
+		}
+	}
+	statement.Query = strings.Join(queries, ",")
+	statement.Args = args
+	return statement
+}
+func (s *OQL) buildWheres() *OQLStatement {
+	return s.buildWheresItem(s.wheres)
 }
 
-func (s OQL) GetGroup() map[string]interface{} {
-	if len(s.groups) == 0 {
+func (s *OQL) buildHaving() *OQLStatement {
+	return s.buildWheresItem(s.having)
+}
+func (s *OQL) buildWheresItem(wheres []*OQLWhere) *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	for _, v := range wheres {
+		sub := s.buildWheresItem(v.Children)
+		statement.Affected += sub.Affected
+		//当前节点加上子节点条件
+		if v.expr != "" {
+			if len(queries) > 0 {
+				queries = append(queries, " ", v.Logical, " ")
+			}
+			//如果有子条件，则需要把子条件也加入到条件集合中
+			if sub.Query != "" {
+				// (a=b and (a=1 or a=2))
+				queries = append(queries, "((", v.expr, ") ", v.Logical, " ", sub.Query, ")")
+				args = append(args, s.getWhereArgs(v)...)
+				args = append(args, sub.Args...)
+			} else {
+				//没有子条件时，就只加当前条件
+				queries = append(queries, "(", v.expr, ")")
+				args = append(args, s.getWhereArgs(v)...)
+			}
+			statement.Affected++
+		} else if sub.Query != "" { //仅仅有子节点
+			if len(queries) > 0 {
+				queries = append(queries, " ", v.Logical, " ")
+			}
+			//如果子条件多于一个，则需要用括号包裹起来
+			if sub.Affected > 1 {
+				queries = append(queries, "(", sub.Query, ")")
+			} else {
+				queries = append(queries, sub.Query)
+			}
+			args = append(args, sub.Args...)
+		}
+	}
+	statement.Args = args
+	statement.Query = strings.Join(queries, "")
+	return statement
+}
+func (s *OQL) getWhereArgs(where *OQLWhere) []interface{} {
+	if len(where.Args) <= 0 {
 		return nil
 	}
-	return nil
+	args := where.Args
+	for i, item := range args {
+		if where.DataType == FIELD_TYPE_ENTITY || where.DataType == FIELD_TYPE_ENUM || where.DataType == "" {
+			if v, ok := item.(map[string]interface{}); ok {
+				if v["_isRefObject"] != nil && v["id"] != nil {
+					args[i] = v["id"]
+				} else if v["_isEnumObject"] != nil && v["id"] != nil {
+					args[i] = v["id"]
+				} else if vv, ok := v["id"]; ok {
+					args[i] = vv
+				}
+			} else if v, ok := item.(utils.SJson); ok {
+				args[i] = v.GetValue()
+			}
+		} else if where.DataType == FIELD_TYPE_DATE {
+			args[i] = utils.CreateTime(item).Format(utils.Layout_YYYYMMDD)
+		} else if where.DataType == FIELD_TYPE_DATETIME {
+			args[i] = utils.CreateTime(item).Format(utils.Layout_YYYYMMDDHHIISS)
+		} else if where.DataType == FIELD_TYPE_BOOL {
+			args[i] = utils.SBool_Parse(item)
+		}
+	}
+	return args
 }
 
-func (s OQL) GetOrder() map[string]interface{} {
-	if len(s.orders) == 0 {
-		return nil
+func (s *OQL) buildGroups() *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	for _, v := range s.groups {
+		if v.expr != "" {
+			queries = append(queries, v.expr)
+			args = append(args, v.Args...)
+			statement.Affected++
+		}
 	}
-	return nil
+	statement.Query = strings.Join(queries, ",")
+	statement.Args = args
+	return statement
 }
+func (s *OQL) buildOrders() *OQLStatement {
+	statement := &OQLStatement{}
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	for _, v := range s.orders {
+		if v.expr != "" {
+			queries = append(queries, v.expr)
+			args = append(args, v.Args...)
+			statement.Affected++
+		}
+	}
+	statement.Query = strings.Join(queries, ",")
+	statement.Args = args
+	return statement
+}
+
+//=============== parse
 func (s *OQL) parseFromField(value *oqlFrom) {
 	//主表，使用别名作路径
 	form := s.parseEntity(value.Query, value.Alias)
 	parts := make([]string, 0)
-	if form != nil {
-		form.IsMain = true
-		parts = append(parts, form.Entity.TableName)
-		if form.Alias != "" {
-			parts = append(parts, form.Alias)
-		}
-	} else {
-		parts = append(parts, value.Query)
-		if value.Alias != "" {
-			parts = append(parts, value.Alias)
-		}
+	if form == nil {
+		form = &oqlEntity{}
+
+		path := strings.ToLower(value.Alias)
+		form.Entity = &MDEntity{ID: value.Query, TableName: value.Query}
+		form.Sequence = len(s.entities) + 1
+		form.Alias = fmt.Sprintf("a%v", form.Sequence)
+		form.Path = path
+		s.entities[path] = form
+	}
+	form.IsMain = true
+	parts = append(parts, form.Entity.TableName)
+	if form.Alias != "" {
+		parts = append(parts, form.Alias)
 	}
 	value.expr = strings.Join(parts, " ")
 }
@@ -103,16 +258,18 @@ func (s *OQL) parseJoinField(value *oqlJoin) error {
 	}
 	//主表，使用别名作路径
 	form := s.parseEntity(value.Query, value.Alias)
-	if form != nil {
-		joins = append(joins, form.Entity.TableName)
-		if form.Alias != "" {
-			joins = append(joins, form.Alias)
-		}
-	} else {
-		joins = append(joins, value.Query)
-		if value.Alias != "" {
-			joins = append(joins, value.Alias)
-		}
+	if form == nil {
+		form = &oqlEntity{}
+		path := strings.ToLower(value.Alias)
+		form.Entity = &MDEntity{ID: value.Query, TableName: value.Query}
+		form.Sequence = len(s.entities) + 1
+		form.Alias = fmt.Sprintf("a%v", form.Sequence)
+		form.Path = path
+		s.entities[path] = form
+	}
+	joins = append(joins, form.Entity.TableName)
+	if form.Alias != "" {
+		joins = append(joins, form.Alias)
 	}
 	if value.Condition != "" {
 		condition := s.parseFieldExpr(value.Condition)
@@ -134,13 +291,23 @@ func (s *OQL) parseWhereField(value *OQLWhere) {
 	}
 }
 func (s *OQL) parseSelectField(value *oqlSelect) {
-	value.expr = s.parseFieldExpr(value.Query)
+	expr := s.parseFieldExpr(value.Query)
+	if value.Alias != "" {
+		value.expr = fmt.Sprintf("%v as %v", expr, value.Alias)
+	} else {
+		value.expr = expr
+	}
 }
 func (s *OQL) parseGroupField(value *oqlGroup) {
 	value.expr = s.parseFieldExpr(value.Query)
 }
 func (s *OQL) parseOrderField(value *oqlOrder) {
-	value.expr = s.parseFieldExpr(value.Query)
+	expr := s.parseFieldExpr(value.Query)
+	if value.Order == OQL_ORDER_DESC {
+		value.expr = fmt.Sprintf("%v desc", expr)
+	} else {
+		value.expr = expr
+	}
 }
 
 // 解析字段表达式，如
@@ -157,7 +324,7 @@ func (s *OQL) parseFieldExpr(expr string) string {
 	for _, match := range matches {
 		str := match[1]
 		//带有括号的是函数，不需要解析
-		if strings.Index(str, utils.PARENTHESIS_LEFT) > 0 {
+		if strings.Index(str, utils.PARENTHESIS_LEFT) < 0 {
 			field, _ := s.parseEntityField(str)
 			if field != nil {
 				expr = strings.ReplaceAll(expr, str, fmt.Sprintf("%s.%s", field.Entity.Alias, field.Field.DbName))
@@ -228,7 +395,9 @@ func (s *OQL) parseEntityField(fieldPath string) (*oqlField, error) {
 	}
 	//主实体
 	entity := s.entities[strings.ToLower(mainFrom.Alias)]
-
+	if entity == nil {
+		return nil, nil
+	}
 	path := ""
 	for i, part := range parts {
 		if i > 0 {
@@ -240,14 +409,15 @@ func (s *OQL) parseEntityField(fieldPath string) (*oqlField, error) {
 		}
 		mdField := entity.Entity.GetField(part)
 		if mdField == nil {
-			return nil, nil
+			mdField = &MDField{ID: part, Code: part, Name: part, DbName: part}
+			s.AddErr(glog.Error(fmt.Sprintf("找不到字段 %v", path)))
 		}
 		field := s.formatEntityField(entity, mdField)
 		field.Path = path
 		s.fields[path] = field
 		if i < len(parts)-1 {
 			entity = s.parseEntity(mdField.TypeID, path)
-			if s.Error != nil {
+			if s.Error != nil || entity == nil {
 				return nil, nil
 			}
 		} else {

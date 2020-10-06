@@ -28,10 +28,11 @@ func (s *testTag) MD() *md.Mder {
 }
 
 func TestOQL(t *testing.T) {
-
-	oql := md.GetOQL().From("cbo_depts as a").Select("id as id,code as code,name")
-	oql.Where("id>?", 1)
-	parseValues := oql.Parse()
+	oql := md.GetOQL()
+	oql.From("cbo_depts").Select("id as id,code as Code,name")
+	oql.Where("id>? and id=?", 1, 2)
+	var count int
+	parseValues := oql.Count(&count)
 	glog.Error(parseValues)
 	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
 	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"

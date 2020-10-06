@@ -57,6 +57,8 @@ const (
 	FIELD_TYPE_DATETIME = "datetime"
 	FIELD_TYPE_XML      = "xml"
 	FIELD_TYPE_JSON     = "json"
+	FIELD_TYPE_ENUM     = "enum"
+	FIELD_TYPE_ENTITY   = "entity"
 )
 
 //字段关联关系

@@ -4,8 +4,10 @@ type OQLWhere struct {
 	//字段与操作号之间需要有空格
 	//示例1: Org =? ; Org in (?) ;$$Org =?  and ($$Period = ?  or $$Period = ? )
 	//示例2：abs($$Qty)>$$TempQty + ?
-	Query    string
-	Logical  string //and or
+	Query   string
+	Logical string //and or
+	//参数值数据类型
+	DataType string
 	Sequence int
 	Children []*OQLWhere
 	Args     []interface{}
@@ -17,15 +19,6 @@ func NewOQLWhere(query string, args ...interface{}) *OQLWhere {
 }
 func (m OQLWhere) String() string {
 	return m.Query
-}
-func (m OQLWhere) GetArgs() []interface{} {
-	return m.Args
-}
-func (m OQLWhere) GetQuery() string {
-	return m.Query
-}
-func (m OQLWhere) GetLogical() string {
-	return m.Logical
 }
 func (m *OQLWhere) Where(query string, args ...interface{}) *OQLWhere {
 	if m.Children == nil {

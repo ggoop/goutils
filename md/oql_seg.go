@@ -1,10 +1,17 @@
 package md
 
 import (
+	"fmt"
 	"github.com/ggoop/goutils/context"
 	"regexp"
 	"strings"
 )
+
+type OQLStatement struct {
+	Query    string
+	Args     []interface{}
+	Affected int64
+}
 
 //公共查询
 type OQL struct {
@@ -19,8 +26,8 @@ type OQL struct {
 	wheres   []*OQLWhere
 	groups   []*oqlGroup
 	having   []*OQLWhere
-	offset   int
-	limit    int
+	offset   int64
+	limit    int64
 	context  *context.Context
 	actuator OQLActuator
 }
@@ -170,7 +177,7 @@ func (s *OQL) Group(query interface{}, args ...interface{}) *OQL {
 func (s *OQL) Where(query interface{}, args ...interface{}) *OQLWhere {
 	var seg *OQLWhere
 	if v, ok := query.(string); ok {
-		seg = NewOQLWhere(v, args)
+		seg = NewOQLWhere(v, args...)
 	} else if v, ok := query.(OQLWhere); ok {
 		seg = &v
 	} else if v, ok := query.(bool); ok && !v {
@@ -183,7 +190,7 @@ func (s *OQL) Where(query interface{}, args ...interface{}) *OQLWhere {
 func (s *OQL) Having(query interface{}, args ...interface{}) *OQLWhere {
 	var seg *OQLWhere
 	if v, ok := query.(string); ok {
-		seg = NewOQLWhere(v, args)
+		seg = NewOQLWhere(v, args...)
 	} else if v, ok := query.(OQLWhere); ok {
 		seg = &v
 	} else if v, ok := query.(bool); ok && !v {
@@ -192,7 +199,29 @@ func (s *OQL) Having(query interface{}, args ...interface{}) *OQLWhere {
 	s.having = append(s.having, seg)
 	return seg
 }
+
+//============= exec
 func (s *OQL) Count(value interface{}) *OQL {
+	s.parse()
+	queries := make([]string, 0)
+	args := make([]interface{}, 0)
+	queries = append(queries, "select count(*)")
+	if statement := s.buildFroms(); statement.Affected > 0 {
+		queries = append(queries, fmt.Sprintf("from %s", statement.Query))
+		args = append(args, statement.Args...)
+	}
+	if statement := s.buildWheres(); statement.Affected > 0 {
+		queries = append(queries, fmt.Sprintf("where %s", statement.Query))
+		args = append(args, statement.Args...)
+	}
+	if statement := s.buildGroups(); statement.Affected > 0 {
+		queries = append(queries, fmt.Sprintf("group by %s", statement.Query))
+		args = append(args, statement.Args...)
+	}
+	if statement := s.buildHaving(); statement.Affected > 0 {
+		queries = append(queries, fmt.Sprintf("having %s", statement.Query))
+		args = append(args, statement.Args...)
+	}
 	return s.GetActuator().Count(s, value)
 }
 func (s *OQL) Pluck(column string, value interface{}) *OQL {
@@ -204,7 +233,7 @@ func (s *OQL) Take(out interface{}) *OQL {
 func (s *OQL) Find(out interface{}) *OQL {
 	return s.GetActuator().Find(s, out)
 }
-func (s *OQL) Paginate(value interface{}, page int, pageSize int) *OQL {
+func (s *OQL) Paginate(value interface{}, page int64, pageSize int64) *OQL {
 	if pageSize > 0 && page <= 0 {
 		page = 1
 	} else if pageSize <= 0 {
