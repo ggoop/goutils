@@ -313,7 +313,7 @@ func (m *md) Migrate() {
 	}
 	//删除不存在的
 	if len(entity.Fields) != len(codes) {
-		m.db.Where("entity_id=? and code not in (?)", entity.ID, codes).Delete(MDField{})
+		m.db.Delete(MDField{}, "entity_id=? and code not in (?)", entity.ID, codes)
 	}
 }
 
