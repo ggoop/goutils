@@ -96,6 +96,7 @@ type MDField struct {
 	DefaultValue   string
 	MinValue       string
 	MaxValue       string
+	SrcID          string `gorm:"size:50" json:"src_id"`
 }
 
 func (s MDField) String() string {

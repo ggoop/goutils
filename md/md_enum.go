@@ -31,6 +31,7 @@ type MDEnum struct {
 	UpdatedAt utils.Time `gorm:"name:更新时间" json:"updated_at"`
 	Name      string     `gorm:"size:50" json:"name"`
 	Sequence  int        `json:"sequence"`
+	SrcID     string     `gorm:"size:50" json:"src_id"`
 }
 
 func (t MDEnum) TableName() string {
@@ -180,6 +181,9 @@ func (s *EntitySv) UpdateOrCreateEnum(enum MDEnum) (*MDEnum, error) {
 		updates := utils.Map{}
 		if old.Name != enum.Name && enum.Name != "" {
 			updates["Name"] = enum.Name
+		}
+		if old.SrcID != enum.SrcID && enum.SrcID != "" {
+			updates["SrcID"] = enum.SrcID
 		}
 		if old.Sequence != enum.Sequence && enum.Sequence >= 0 {
 			updates["Sequence"] = enum.Sequence

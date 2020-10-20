@@ -189,6 +189,8 @@ func (m *md) Migrate() {
 	if newEntity.Type == "" {
 		newEntity.Type = TYPE_ENTITY
 	}
+	newEntity.System = utils.SBool_True
+
 	if entity == nil {
 		entity = newEntity
 		entity.ID = mdInfo.ID
@@ -211,8 +213,11 @@ func (m *md) Migrate() {
 		if entity.Domain != newEntity.Domain {
 			updates["Domain"] = newEntity.Domain
 		}
+		if entity.System.NotEqual(newEntity.System) {
+			updates["System"] = newEntity.System
+		}
 		if len(updates) > 0 {
-			m.db.Model(entity).Where("id=?", entity.ID).Updates(updates)
+			m.db.Model(MDEntity{}).Where("id=?", entity.ID).Updates(updates)
 			entity = m.GetEntity()
 		}
 	}
@@ -226,7 +231,6 @@ func (m *md) Migrate() {
 		if field.IsIgnored {
 			continue
 		}
-
 		if newField.Name == "" {
 			newField.Name = newField.Code
 		}
@@ -306,15 +310,16 @@ func (m *md) Migrate() {
 			if oldField.Limit != newField.Limit {
 				updates["Limit"] = newField.Limit
 			}
+			if oldField.SrcID != newField.SrcID && newField.SrcID != "" {
+				updates["SrcID"] = newField.SrcID
+			}
 			if len(updates) > 0 {
-				m.db.Model(oldField).Updates(updates)
+				m.db.Model(MDField{}).Where("id=?", oldField.ID).Updates(updates)
 			}
 		}
 	}
 	//删除不存在的
-	if len(entity.Fields) != len(codes) {
-		m.db.Delete(MDField{}, "entity_id=? and code not in (?)", entity.ID, codes)
-	}
+	m.db.Delete(MDField{}, "entity_id=? and code not in (?)", entity.ID, codes)
 }
 
 func Migrate(db *repositories.MysqlRepo, values ...interface{}) {

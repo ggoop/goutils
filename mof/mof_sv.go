@@ -149,7 +149,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 			if oldEntity.Tags != entity.Tags {
 				datas["Tags"] = entity.Tags
 			}
-			if oldEntity.System != entity.System {
+			if entity.System.Valid() && oldEntity.System.NotEqual(entity.System) {
 				datas["System"] = entity.System
 			}
 			if oldEntity.Domain != entity.Domain {
@@ -162,7 +162,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 				datas["Memo"] = entity.Memo
 			}
 			if len(datas) > 0 {
-				s.repo.Model(oldEntity).Where("id=?", oldEntity.ID).Updates(datas)
+				s.repo.Model(md.MDEntity{}).Where("id=?", oldEntity.ID).Updates(datas)
 			}
 		} else {
 			if entity.Type == md.TYPE_ENTITY && entity.TableName == "" {
@@ -215,7 +215,7 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 					}
 					field.IsNormal = utils.SBool_False
 				}
-				if s.repo.Model(oldField).Order("id").Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
+				if s.repo.Model(md.MDField{}).Order("id").Where("entity_id=? and code=?", entity.ID, field.Code).Take(&oldField); oldField.ID != "" {
 					datas := make(map[string]interface{})
 					if oldField.Name != field.Name {
 						datas["Name"] = field.Name
@@ -271,8 +271,11 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 					if oldField.Sequence != field.Sequence {
 						datas["Sequence"] = field.Sequence
 					}
+					if oldField.SrcID != field.SrcID && field.SrcID != "" {
+						datas["SrcID"] = field.SrcID
+					}
 					if len(datas) > 0 {
-						s.repo.Model(oldField).Where("entity_id=? and code=?", entity.ID, field.Code).Updates(datas)
+						s.repo.Model(md.MDField{}).Where("entity_id=? and code=?", entity.ID, field.Code).Updates(datas)
 					}
 				} else {
 					s.repo.Create(&field)
@@ -298,13 +301,13 @@ func (s *MOFSv) AddMDEntities(items []md.MDEntity) error {
 						datas["Sequence"] = newEnum.Sequence
 					}
 					if len(datas) > 0 {
-						s.repo.Model(oldEnum).Where("entity_id=? and id=?", oldEnum.EntityID, oldEnum.ID).Updates(datas)
+						s.repo.Model(md.MDEnum{}).Where("entity_id=? and id=?", oldEnum.EntityID, oldEnum.ID).Updates(datas)
 					}
 				} else {
 					s.repo.Create(&newEnum)
 				}
 			}
-			s.repo.Delete(md.MDField{}, "entity_id=? and code not in (?)", entity.ID, itemCodes)
+			s.repo.Delete(md.MDEnum{}, "entity_id=? and id not in (?)", entity.ID, itemCodes)
 		}
 	}
 	if len(entityIds) > 0 {
