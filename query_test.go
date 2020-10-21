@@ -14,13 +14,10 @@ import (
 )
 
 type testTag struct {
-	ID     string `gorm:"primary_key;size:50" json:"id"`
-	Code   string `gorm:"size:2"`
-	Name   utils.SBool
-	Json   utils.SJson
-	TypeID string     `gorm:"size:10"`
-	Type   *md.MDEnum `gorm:"limit:md.type.enum"`
-	Field  md.MDField
+	md.Model
+	Code string `gorm:"size:2"`
+	Name utils.SBool
+	Json utils.SJson
 }
 
 func (s *testTag) MD() *md.Mder {
@@ -28,24 +25,15 @@ func (s *testTag) MD() *md.Mder {
 }
 
 func TestOQL(t *testing.T) {
-	oql := md.GetOQL()
-	oql.From("cbo_depts").Select("id as id,code as Code,name")
-	oql.Where("id>? and id=?", 1, 2)
-	var count int
-	parseValues := oql.Count(&count)
-	glog.Error(parseValues)
-	//exp := "([\\S]+)(?i:(?:as|[\\s])+)([\\S]+)"
-	//exp := "([\\S]+.*\\S)(?i:\\s+as+\\s)([\\S]+)|([\\S]+.*[\\S]+)"
-	exp := `\(.*,`
-	strList := []string{
-		"fieldA,fieldB",
-		"sum(fieldA,fieldB)",
-	}
+	repo := repositories.NewMysqlRepo()
+	//md.Migrate(repo,&testTag{})
 
-	r := regexp.MustCompile(exp)
-	for _, str := range strList {
-		matched := r.MatchString(str)
-		glog.Error(matched)
+	item := testTag{}
+	items := make([]interface{}, 0)
+	items = append(items, &item)
+
+	if err := repo.BatchInsert(items); err != nil {
+		glog.Error(err)
 	}
 
 }

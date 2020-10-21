@@ -49,14 +49,14 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 		for i := range fields {
 			field := fields[i]
 			if field.Name == "CreatedAt" && field.IsBlank {
-				fields[i].Set(utils.NewTime())
+				field.Set(utils.NewTime())
 			}
 			if field.Name == "UpdatedAt" && field.IsBlank {
-				fields[i].Set(utils.NewTime())
+				field.Set(utils.NewTime())
 			}
 			if field.IsPrimaryKey && field.IsBlank {
 				if field.Name == "ID" && field.Field.Type().Kind() == reflect.String {
-					fields[i].Set(utils.GUID())
+					field.Set(utils.GUID())
 				}
 			}
 			if !field.IsNormal || field.IsIgnored {
@@ -68,10 +68,10 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 			}
 			if field.IsBlank && field.HasDefaultValue {
 				if str, ok := field.TagSettingsGet("DEFAULT"); ok && str != "" {
-					fields[i].SetDefaultValue(str)
+					field.SetDefaultValue(str)
 				}
 			}
-			placeholders = append(placeholders, mainScope.AddToVars(fields[i].Field.Interface()))
+			placeholders = append(placeholders, mainScope.AddToVars(field.Field.Interface()))
 		}
 		placeholdersStr := "(" + strings.Join(placeholders, ", ") + ")"
 		placeholdersArr = append(placeholdersArr, placeholdersStr)
