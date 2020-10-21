@@ -68,7 +68,7 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 			}
 			if field.IsBlank && field.HasDefaultValue {
 				if str, ok := field.TagSettingsGet("DEFAULT"); ok && str != "" {
-					field.SetDefaultValue(str)
+					fields[i].SetDefaultValue(str)
 				}
 			}
 			placeholders = append(placeholders, mainScope.AddToVars(fields[i].Field.Interface()))
