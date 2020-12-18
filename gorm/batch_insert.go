@@ -95,27 +95,12 @@ func (s *DB) BatchInsert(objArr []interface{}) error {
 	return nil
 }
 func (s *DB) batchInsertSave(scope *Scope, quoted []string, placeholders []string) error {
-	driverName := scope.Dialect().GetName()
-	var sql string
-	if driverName == utils.ORM_DRIVER_GODROR {
-		//insert all
-		//into tableA(user_name,address) values('aaa','henan')
-		//into tableA(user_name,address) values('bbb','shanghai')
-		//into tableA(user_name,address) values('ccc','beijing')
-		//select * from dual;
-		parts := make([]string, 0, len(placeholders))
-		for _, p := range placeholders {
-			parts = append(parts, fmt.Sprintf("INTO %s (%s) VALUES %s", scope.QuotedTableName(), strings.Join(quoted, ", "), p))
-		}
+	var sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
+		scope.QuotedTableName(),
+		strings.Join(quoted, ", "),
+		strings.Join(placeholders, ", "),
+	)
 
-		sql = fmt.Sprintf("INSERT ALL %s \r select 1 from dual", strings.Join(parts, " \r"))
-	} else {
-		sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-			scope.QuotedTableName(),
-			strings.Join(quoted, ", "),
-			strings.Join(placeholders, ", "),
-		)
-	}
 	scope.Raw(sql)
 	if _, err := scope.SQLDB().Exec(scope.SQL, scope.SQLVars...); err != nil {
 		glog.Error(err)

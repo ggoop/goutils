@@ -120,9 +120,6 @@ func (t *SJson) Scan(v interface{}) error {
 	return nil
 }
 func (t SJson) OrmDataType(driver string) string {
-	if driver == ORM_DRIVER_GODROR {
-		return "VARCHAR2(4000)"
-	}
 	return "text"
 }
 func (t SJson) GetObject(obj interface{}) error {

@@ -176,15 +176,6 @@ func (s *QueryCase) addSubItemToIWhere(iw IQWhere, subValue QueryWhere) {
 		}
 	}
 }
-func (s *QueryCase) wherePlaceholderWrap(item IQWhere) string {
-	dType := item.GetDataType()
-	if dType == md.FIELD_TYPE_DATETIME || dType == md.FIELD_TYPE_DATE {
-		if repositories.Default().Dialect().GetName() == utils.ORM_DRIVER_GODROR {
-			return fmt.Sprintf("to_date(?,'yyyy-mm-dd')")
-		}
-	}
-	return "?"
-}
 func (s *QueryCase) queryWhereToIWhere(value QueryWhere) IQWhere {
 	if value.Enabled.IsFalse() {
 		return nil
@@ -214,7 +205,7 @@ func (s *QueryCase) queryWhereToIWhere(value QueryWhere) IQWhere {
 		}
 	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && (value.Operator == "between") {
 		item.Args = value.Value.GetInterfaceSlice()
-		item.Query = fmt.Sprintf("$$%v between %s and %s", value.Field, s.wherePlaceholderWrap(&item), s.wherePlaceholderWrap(&item))
+		item.Query = fmt.Sprintf("$$%v between ? and ?", value.Field)
 		if len(item.Args) != 2 {
 			return nil
 		}
@@ -226,13 +217,13 @@ func (s *QueryCase) queryWhereToIWhere(value QueryWhere) IQWhere {
 		}
 
 	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && (value.Operator == "=" || value.Operator == "<>" || value.Operator == ">" || value.Operator == ">=" || value.Operator == "<" || value.Operator == "<=") {
-		item.Query = fmt.Sprintf("$$%v %s %s", value.Field, value.Operator, s.wherePlaceholderWrap(&item))
+		item.Query = fmt.Sprintf("$$%v %s ?", value.Field, value.Operator)
 		item.Args = value.Value.GetInterfaceSlice()
 		if len(item.Args) == 0 || value.Value.GetString() == "" {
 			return nil
 		}
 	} else if value.Expr == "" && value.Field != "" && value.Value.Valid() && value.Value.GetString() != "" && s.Context.IsValid() && (value.Operator == "=p" || value.Operator == "<>p" || value.Operator == ">p" || value.Operator == ">=p" || value.Operator == "<p" || value.Operator == "<=p") {
-		item.Query = fmt.Sprintf("$$%v %s %s", value.Field, strings.Replace(value.Operator, "p", "", -1), s.wherePlaceholderWrap(&item))
+		item.Query = fmt.Sprintf("$$%v %s ?", value.Field, strings.Replace(value.Operator, "p", "", -1))
 		item.Args = []interface{}{s.Context.GetValue(strings.Replace(value.Value.GetString(), "@", "", -1))}
 	} else if value.Expr != "" {
 		//表达式 模式

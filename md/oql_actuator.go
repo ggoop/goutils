@@ -6,7 +6,6 @@ import (
 
 type OQLActuator interface {
 	GetName() string
-	PlaceholderWrap(dataTypes ...interface{}) string
 	Count(oql *OQL, value interface{}) *OQL
 	Pluck(oql *OQL, column string, value interface{}) *OQL
 	Take(oql *OQL, out interface{}) *OQL
@@ -39,11 +38,6 @@ type commonActuator struct {
 func (commonActuator) GetName() string {
 	return "common"
 }
-
-func (s *commonActuator) PlaceholderWrap(dataTypes ...interface{}) string {
-	return "?"
-}
-
 func (s *commonActuator) Count(oql *OQL, value interface{}) *OQL {
 	oql.Select(false).Select("count(*)")
 	return oql

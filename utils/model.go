@@ -19,8 +19,6 @@ const (
 	ORM_DRIVER_MSSQL = "mssql"
 	//mysql
 	ORM_DRIVER_MYSQL = "mysql"
-	//oracle :godror
-	ORM_DRIVER_GODROR = "godror"
 )
 
 type SqlStruct struct {

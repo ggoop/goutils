@@ -19,10 +19,6 @@ type mysqlActuator struct {
 func (mysqlActuator) GetName() string {
 	return utils.ORM_DRIVER_MYSQL
 }
-func (s *mysqlActuator) PlaceholderWrap(dataTypes ...interface{}) string {
-	return "?"
-}
-
 func (s *mysqlActuator) Count(oql *OQL, value interface{}) *OQL {
 	return oql
 }

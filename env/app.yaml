@@ -7,12 +7,12 @@ app:
   debug: true
 db:
   # mysql,mssql
-  driver: godror
+  driver: mysql
   # localhost
   host: localhost
-  database: orcl
-  username: scott
-  password: 123456
+  database: goutils
+  username: root
+  password: root
 log:
   #Level such as fatal,error, warn, info, debug, or disable,Level defaults to "info"
   level: info

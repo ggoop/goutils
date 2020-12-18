@@ -114,8 +114,5 @@ func (t SBool) _ToBoolValue(value interface{}) string {
 	return bValue
 }
 func (t SBool) OrmDataType(driver string) string {
-	if driver == ORM_DRIVER_GODROR {
-		return "varchar2(2)"
-	}
 	return "varchar(2)"
 }
