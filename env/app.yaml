@@ -3,7 +3,7 @@ app:
   code: appcode
   name: 应用名称
   locale: zh-cn
-  port: 3003
+  port: 30035
   debug: true
 db:
   # mysql,mssql

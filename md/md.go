@@ -28,6 +28,8 @@ const (
 	STATE_DELETED = "deleted"
 	//正常的
 	STATE_NORMAL = "normal"
+	//忽略的
+	STATE_IGNORED = "ignored"
 )
 
 //元数据类型
@@ -330,6 +332,10 @@ func Migrate(db *repositories.MysqlRepo, values ...interface{}) {
 			&MDEntity{}, &MDField{}, &MDEnum{}, &MDFilter{},
 			&MDActionCommand{}, &MDActionRule{},
 			&MDPage{}, &MDPageWidget{},
+			&UIWidget{}, &UIEntity{}, &UILayout{}, &UIItem{},
+			&UIToolbars{}, &UIToolbarItem{},
+			&UIActionCommand{}, &UIActionRule{},
+			&UIFilters{}, &UIFilterItem{}, &UIFilterSolution{},
 		}
 		needDb := make([]interface{}, 0)
 		for _, v := range mds {

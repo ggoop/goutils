@@ -23,6 +23,9 @@ func (s *MOFSv) getEntity(entityID string) md.MDEntity {
 	s.repo.Model(item).Order("id").Take(&item, "id=?", entityID)
 	return item
 }
+func (s *MOFSv) ImportUIMeta(entityID string) {
+	return
+}
 func (s *MOFSv) entityToTables(items []md.MDEntity, oldItems []md.MDEntity) error {
 	if items == nil || len(items) == 0 {
 		return nil
