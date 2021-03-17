@@ -94,11 +94,13 @@ func GetLogger(key string) *Logger {
 
 func createLogger(args ...string) *Logger {
 	envConfig := readConfig()
-	fileLogger := &lumberjack.Logger{
-		Filename:  getFilePath(envConfig, args...),
-		MaxSize:   10, //MB
-		LocalTime: true,
-		Compress:  true,
+	fileLogger := lumberjack.Logger{
+		Filename:   getFilePath(envConfig, args...),
+		MaxSize:    10, //MB
+		MaxAge:     1,
+		MaxBackups: 180,
+		LocalTime:  true,
+		Compress:   true,
 	}
 	encoderConfig := zap.NewProductionEncoderConfig()
 
@@ -107,12 +109,23 @@ func createLogger(args ...string) *Logger {
 	logLevel := zap.NewAtomicLevel()
 	logLevel.SetLevel(getLevelByTag(envConfig.Level))
 
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(fileLogger)),
-		logLevel,
-	)
+	encodeTime := func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	}
 
+	encoderFileConfig := zap.NewProductionEncoderConfig()
+	encoderFileConfig.EncodeTime = encodeTime
+	encoderFile := zapcore.NewJSONEncoder(encoderFileConfig)
+
+	encoderConsoleConfig := zap.NewDevelopmentEncoderConfig()
+	encoderConsoleConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	encoderConsoleConfig.EncodeTime = encodeTime
+	encoderConsole := zapcore.NewConsoleEncoder(encoderConsoleConfig)
+
+	core := zapcore.NewTee(
+		zapcore.NewCore(encoderConsole, zapcore.AddSync(os.Stdout), logLevel), //打印到控制台
+		zapcore.NewCore(encoderFile, zapcore.AddSync(&fileLogger), logLevel),
+	)
 	log := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(2))
 	l := Logger{
 		atomicLevel: logLevel,
